@@ -1,6 +1,6 @@
 import type { CallFacts, CallType, DimensionBand, Grade } from "@/schemas/evaluation";
 
-export const PROMPT_VERSION = "evaluation-v1.0.0";
+export const PROMPT_VERSION = "evaluation-v1.0.1";
 export const STAGE_SCHEMA_VERSION = "v1";
 
 interface BandBucket {

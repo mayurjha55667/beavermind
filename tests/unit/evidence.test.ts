@@ -24,6 +24,13 @@ describe("exact evidence verification", () => {
     );
   });
 
+  it("accepts an exact quote copied with its displayed line number and speaker", () => {
+    const facts = makeFacts();
+    facts.dimensions[0]!.positiveEvidence[0]!.quote =
+      "L1 [Coach]: Evidence for dimension 1.";
+    expect(() => verifyEvidenceLedger(facts, parseTranscript(SIMPLE_TRANSCRIPT))).not.toThrow();
+  });
+
   it("rejects non-contiguous multi-line evidence", () => {
     const facts = makeFacts();
     facts.dimensions[0]!.positiveEvidence[0]!.lineNumbers = [1, 3];

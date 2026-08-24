@@ -111,6 +111,9 @@ function verifyReference(
 
   const verifiedLines = transcriptLines.filter((turn): turn is TranscriptTurn => turn !== undefined);
   const candidates = [
+    verifiedLines
+      .map((turn) => "L" + turn.lineNumber + " " + turn.canonicalLine)
+      .join("\n"),
     verifiedLines.map((turn) => turn.canonicalLine).join("\n"),
     verifiedLines.map((turn) => turn.text).join("\n"),
     verifiedLines.map((turn) => turn.text).join(" "),
