@@ -9,6 +9,7 @@ import {
   QueueProvider,
   makeFacts,
   makeNarrative,
+  makeRubricAudit,
   makeScoring,
   providerFailure,
 } from "../helpers";
@@ -17,6 +18,7 @@ function successfulProvider() {
   return new QueueProvider({
     call_facts: [makeFacts()],
     rubric_scoring: [makeScoring("kickoff")],
+    rubric_audit: [makeRubricAudit("kickoff")],
     report_narrative: [makeNarrative()],
   });
 }
@@ -31,7 +33,12 @@ describe("four-stage evaluation integration", () => {
     expect(repository.dimensions).toHaveLength(12);
     expect(repository.dimensions.every((dimension) => dimension.evidence.length > 0)).toBe(true);
     expect(repository.dimensions.every((dimension) => dimension.missingBehaviours.length === 0)).toBe(true);
-    expect(provider.calls).toEqual(["call_facts", "rubric_scoring", "report_narrative"]);
+    expect(provider.calls).toEqual([
+      "call_facts",
+      "rubric_scoring",
+      "rubric_audit",
+      "report_narrative",
+    ]);
   });
 
   it("retries invalid structured evidence output once and then succeeds", async () => {
@@ -39,11 +46,30 @@ describe("four-stage evaluation integration", () => {
     const provider = new QueueProvider({
       call_facts: [{ invalid: true }, makeFacts()],
       rubric_scoring: [makeScoring("kickoff")],
+      rubric_audit: [makeRubricAudit("kickoff")],
       report_narrative: [makeNarrative()],
     });
     await runCompleteEvaluation(repository.evaluation.id, { repository, provider });
     expect(repository.evaluation.status).toBe("completed");
     expect(provider.calls.filter((name) => name === "call_facts")).toHaveLength(2);
+  });
+
+  it("retries a rubric audit that approves a band without satisfying its requirements", async () => {
+    const repository = new InMemoryRepository();
+    const invalidAudit = makeRubricAudit("kickoff");
+    invalidAudit.dimensions[0]!.bandChecks.find((check) => check.band === "ELITE")!
+      .requirementsSatisfied = false;
+    const provider = new QueueProvider({
+      call_facts: [makeFacts()],
+      rubric_scoring: [makeScoring("kickoff")],
+      rubric_audit: [invalidAudit, makeRubricAudit("kickoff")],
+      report_narrative: [makeNarrative()],
+    });
+
+    await runCompleteEvaluation(repository.evaluation.id, { repository, provider });
+
+    expect(provider.calls.filter((name) => name === "rubric_audit")).toHaveLength(2);
+    expect(repository.evaluation.status).toBe("completed");
   });
 
   it("fails safely after a fabricated quote also fails the correction retry", async () => {
@@ -100,6 +126,7 @@ describe("four-stage evaluation integration", () => {
     const provider = new QueueProvider({
       call_facts: [facts],
       rubric_scoring: [scoring],
+      rubric_audit: [makeRubricAudit("kickoff"), makeRubricAudit("kickoff")],
     });
     await expect(
       runCompleteEvaluation(repository.evaluation.id, { repository, provider }),

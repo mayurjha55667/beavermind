@@ -117,6 +117,34 @@ export const ScoringResultSchema = z
   .strict();
 export type ScoringResult = z.infer<typeof ScoringResultSchema>;
 
+export const RubricBandCheckSchema = z
+  .object({
+    band: z.enum(["ELITE", "STRONG", "MID", "SURFACE", "WEAK", "FAIL"]),
+    requirementsSatisfied: z.boolean(),
+    evidenceLineNumbers: z.array(z.number().int().positive()),
+    explanation: z.string().min(1),
+  })
+  .strict();
+
+export const RubricAuditDimensionSchema = z
+  .object({
+    dimensionId: z.number().int().min(1).max(12),
+    score: z.number().nullable(),
+    band: DimensionBandSchema,
+    reasoning: z.string().min(1),
+    evidenceLineNumbers: z.array(z.number().int().positive()),
+    quickFix: z.string().min(1),
+    bandChecks: z.array(RubricBandCheckSchema),
+  })
+  .strict();
+
+export const RubricAuditResultSchema = z
+  .object({
+    dimensions: z.array(RubricAuditDimensionSchema).length(12),
+  })
+  .strict();
+export type RubricAuditResult = z.infer<typeof RubricAuditResultSchema>;
+
 export const ReportNarrativeSchema = z
   .object({
     oneThing: z

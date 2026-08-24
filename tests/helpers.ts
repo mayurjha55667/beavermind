@@ -17,6 +17,7 @@ import type {
   CallFacts,
   CallType,
   ReportNarrative,
+  RubricAuditResult,
   ScoringResult,
   StageName,
 } from "@/schemas/evaluation";
@@ -98,6 +99,41 @@ export function makeScoring(
       };
     }),
     proposedCaps: [],
+  };
+}
+
+export function makeRubricAudit(
+  callType: CallType,
+  scoreOverrides: Record<number, number | null> = {},
+): RubricAuditResult {
+  const scoring = makeScoring(callType, scoreOverrides);
+  const rubric = getRubricConfig(callType);
+  return {
+    dimensions: rubric.dimensions.map((definition) => {
+      const proposed = scoring.dimensions[definition.id - 1]!;
+      return {
+        dimensionId: definition.id,
+        score: proposed.score,
+        band: proposed.band,
+        reasoning: proposed.reasoning,
+        evidenceLineNumbers: proposed.evidenceLineNumbers,
+        quickFix: proposed.quickFix,
+        bandChecks:
+          proposed.score === null
+            ? []
+            : definition.buckets.map((bucket) => ({
+                band: bucket.band,
+                requirementsSatisfied: bucket.band === proposed.band,
+                evidenceLineNumbers: bucket.band === proposed.band && (proposed.score ?? 0) > 0
+                  ? proposed.evidenceLineNumbers
+                  : [],
+                explanation:
+                  bucket.band === proposed.band
+                    ? "The verified fixture evidence satisfies this band."
+                    : "The verified fixture evidence does not satisfy this band.",
+              })),
+      };
+    }),
   };
 }
 

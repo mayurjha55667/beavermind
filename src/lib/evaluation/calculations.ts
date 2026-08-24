@@ -39,8 +39,13 @@ export function validateAndCalculate(input: {
     });
   }
 
-  validateProposedCaps(input.scoring, rubric.caps, input.evidence, input.transcript);
-  const appliedCaps = buildAppliedCaps(input.scoring, rubric.caps, input.evidence);
+  const repairedCapProposals = repairProposedCaps(
+    input.scoring,
+    rubric.caps,
+    input.evidence,
+    input.transcript,
+  );
+  const appliedCaps = buildAppliedCaps(repairedCapProposals, rubric.caps, input.evidence);
   const effectiveMaxScores = calculateEffectiveMaxScores(input.callType, input.evidence);
 
   const dimensions = rubric.dimensions.map((definition) => {
@@ -109,7 +114,23 @@ export function validateAndCalculate(input: {
       });
     }
 
-    const evidenceLines = collectEvidenceLines(evidenceDimension, proposed.evidenceLineNumbers).map(
+    const allowedEvidenceLineNumbers = new Set(
+      [...evidenceDimension.positiveEvidence, ...evidenceDimension.negativeEvidence].flatMap(
+        (reference) => reference.transcriptLines.map((turn) => turn.lineNumber),
+      ),
+    );
+    const selectedEvidenceLineNumbers = [
+      ...new Set(
+        proposed.evidenceLineNumbers.filter((lineNumber) =>
+          allowedEvidenceLineNumbers.has(lineNumber),
+        ),
+      ),
+    ];
+    const repairedEvidenceLineNumbers =
+      selectedEvidenceLineNumbers.length > 0 || proposed.score === 0
+        ? selectedEvidenceLineNumbers
+        : [...allowedEvidenceLineNumbers];
+    const evidenceLines = collectEvidenceLines(evidenceDimension, repairedEvidenceLineNumbers).map(
       (turn) => ({
         lineNumber: turn.lineNumber,
         speaker: turn.speaker,
@@ -309,37 +330,36 @@ function applyOverallCaps(
   return round(limits.length === 0 ? score : Math.min(score, ...limits));
 }
 
-function validateProposedCaps(
+function repairProposedCaps(
   scoring: ScoringResult,
   caps: readonly CapDefinition[],
   evidence: VerifiedEvidenceLedger,
   transcript: ParsedTranscript,
-): void {
+): ScoringResult["proposedCaps"] {
   const capMap = new Map(caps.map((cap) => [cap.id, cap]));
+  const repaired: ScoringResult["proposedCaps"] = [];
+  const seen = new Set<string>();
   for (const proposed of scoring.proposedCaps) {
     const cap = capMap.get(proposed.capId);
-    if (!cap || !cap.applies(evidence)) {
-      throw new AppError("SCORING_VALIDATION_FAILED", {
-        details: { capId: proposed.capId, message: "Proposed cap is unknown or unsupported by facts." },
-      });
-    }
+    if (!cap || !cap.applies(evidence) || seen.has(proposed.capId)) continue;
     if (
       proposed.supportingLineNumbers.length === 0 ||
       proposed.supportingLineNumbers.some((line) => !transcript.turns[line - 1])
     ) {
-      throw new AppError("SCORING_VALIDATION_FAILED", {
-        details: { capId: proposed.capId, message: "Proposed cap lacks valid supporting lines." },
-      });
+      continue;
     }
+    seen.add(proposed.capId);
+    repaired.push(proposed);
   }
+  return repaired;
 }
 
 function buildAppliedCaps(
-  scoring: ScoringResult,
+  proposalsInput: ScoringResult["proposedCaps"],
   caps: readonly CapDefinition[],
   evidence: VerifiedEvidenceLedger,
 ): AppliedCap[] {
-  const proposals = new Map(scoring.proposedCaps.map((cap) => [cap.capId, cap]));
+  const proposals = new Map(proposalsInput.map((cap) => [cap.capId, cap]));
   return caps.filter((cap) => cap.applies(evidence)).map((cap) => ({
     id: cap.id,
     label: cap.label,

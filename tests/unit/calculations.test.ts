@@ -30,6 +30,47 @@ describe("deterministic calculations", () => {
     expect(result.appliedCaps.map((cap) => cap.id)).toContain("kickoff_no_follow_up_questions");
   });
 
+  it("repairs unknown or unsupported model cap proposals without losing fact-derived caps", () => {
+    const scoring = makeScoring("kickoff");
+    scoring.proposedCaps = [
+      {
+        capId: "model_invented_cap",
+        reason: "The model invented an identifier.",
+        supportingLineNumbers: [1],
+      },
+      {
+        capId: "kickoff_unresolved_confusion",
+        reason: "The verified facts do not support this cap.",
+        supportingLineNumbers: [1],
+      },
+      {
+        capId: "kickoff_no_follow_up_questions",
+        reason: "This cap applies, but the cited line is invalid.",
+        supportingLineNumbers: [999],
+      },
+    ];
+    const result = calculate("kickoff", {
+      facts: makeFacts({ noFollowUpQuestions: true }),
+      scoring,
+    });
+    expect(result.finalScore).toBe(70);
+    expect(result.appliedCaps).toEqual([
+      expect.objectContaining({
+        id: "kickoff_no_follow_up_questions",
+        supportingLineNumbers: [],
+      }),
+    ]);
+  });
+
+  it("repairs scoring citations to the verified per-dimension evidence ledger", () => {
+    const scoring = makeScoring("kickoff");
+    scoring.dimensions[3]!.evidenceLineNumbers = [4, 999];
+    scoring.dimensions[8]!.evidenceLineNumbers = [999];
+    const result = calculate("kickoff", { scoring });
+    expect(result.dimensions[3]?.evidence.map((line) => line.lineNumber)).toEqual([4]);
+    expect(result.dimensions[8]?.evidence.map((line) => line.lineNumber)).toEqual([9]);
+  });
+
   it("disables D4 only when all movement signals are absent and normalizes from 85", () => {
     const facts = makeFacts({
       movementCoachingPresent: false,

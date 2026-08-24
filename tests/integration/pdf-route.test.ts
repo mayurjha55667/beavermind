@@ -6,6 +6,7 @@ import {
   QueueProvider,
   makeFacts,
   makeNarrative,
+  makeRubricAudit,
   makeScoring,
 } from "../helpers";
 
@@ -20,6 +21,7 @@ describe("completed PDF route", () => {
     const provider = new QueueProvider({
       call_facts: [makeFacts()],
       rubric_scoring: [makeScoring("kickoff")],
+      rubric_audit: [makeRubricAudit("kickoff")],
       report_narrative: [makeNarrative()],
     });
     await runCompleteEvaluation(repository.evaluation.id, { repository, provider });

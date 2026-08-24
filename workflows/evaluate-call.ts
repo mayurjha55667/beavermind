@@ -150,9 +150,25 @@ function safeWorkflowDiagnostic(error: AppError): Record<string, unknown> {
   if (details && typeof details === "object") {
     const source = details as Record<string, unknown>;
     const safeDetails: Record<string, unknown> = {};
-    for (const key of ["message", "provider", "status", "code", "type", "hint"]) {
+    for (const key of [
+      "message",
+      "provider",
+      "status",
+      "code",
+      "type",
+      "hint",
+      "capId",
+      "dimensionId",
+      "score",
+    ]) {
       const value = source[key];
       if (typeof value === "string" || typeof value === "number" || value === null) {
+        safeDetails[key] = value;
+      }
+    }
+    for (const key of ["allowedScores", "invalid"]) {
+      const value = source[key];
+      if (Array.isArray(value) && value.every((item) => typeof item === "number")) {
         safeDetails[key] = value;
       }
     }
