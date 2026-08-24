@@ -14,9 +14,17 @@ export default async function EvaluationPage({
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
   const repository = new SupabaseEvaluationRepository();
-  const base = await repository.getEvaluation(id);
+  const [base, reports] = await Promise.all([
+    repository.getEvaluation(id),
+    repository.listEvaluations(),
+  ]);
   if (!base) notFound();
   const evaluation =
     base.status === "completed" ? (await repository.getCompletedEvaluation(id)) ?? base : base;
-  return <EvaluationView initialEvaluation={toPublicEvaluation(evaluation)} />;
+  return (
+    <EvaluationView
+      initialEvaluation={toPublicEvaluation(evaluation)}
+      initialReports={reports}
+    />
+  );
 }

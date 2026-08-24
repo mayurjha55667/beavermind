@@ -7,6 +7,7 @@ import type {
   CompletedEvaluation,
   EvaluationRecord,
   EvaluationRepository,
+  EvaluationSummary,
   LLMProvider,
   StageEnvelope,
   StageResultRecord,
@@ -268,6 +269,10 @@ export class InMemoryRepository implements EvaluationRepository {
   async createEvaluation(): Promise<EvaluationRecord> { return this.evaluation; }
   async getEvaluation(id: string): Promise<EvaluationRecord | null> {
     return id === this.evaluation.id ? this.evaluation : null;
+  }
+  async listEvaluations(): Promise<EvaluationSummary[]> {
+    const { id, callType, status, currentStage, createdAt, completedAt, finalScore, grade } = this.evaluation;
+    return [{ id, callType, status, currentStage, createdAt, completedAt, finalScore, grade }];
   }
   async getCompletedEvaluation(id: string): Promise<CompletedEvaluation | null> {
     if (id !== this.evaluation.id || this.evaluation.status !== "completed") return null;

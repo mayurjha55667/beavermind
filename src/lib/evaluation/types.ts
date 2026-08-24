@@ -197,6 +197,18 @@ export interface EvaluationRecord {
   failedAt: string | null;
 }
 
+export type EvaluationSummary = Pick<
+  EvaluationRecord,
+  | "id"
+  | "callType"
+  | "status"
+  | "currentStage"
+  | "createdAt"
+  | "completedAt"
+  | "finalScore"
+  | "grade"
+>;
+
 export interface StageResultRecord<T = unknown> {
   evaluationId: string;
   stage: StageName;
@@ -229,6 +241,7 @@ export interface EvaluationRepository {
     modelName: string;
   }): Promise<EvaluationRecord>;
   getEvaluation(id: string): Promise<EvaluationRecord | null>;
+  listEvaluations(limit?: number): Promise<EvaluationSummary[]>;
   getCompletedEvaluation(id: string): Promise<CompletedEvaluation | null>;
   setWorkflowRunId(id: string, workflowRunId: string): Promise<void>;
   markStage(id: string, status: Exclude<EvaluationStatus, "queued" | "completed" | "failed">): Promise<void>;

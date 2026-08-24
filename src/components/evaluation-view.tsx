@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { REPORT_STAGE_LABELS, ReportsSidebar } from "@/components/reports-sidebar";
 import type { PublicEvaluation } from "@/lib/evaluation/public-report";
+import type { EvaluationSummary } from "@/lib/evaluation/types";
 
 const PROCESSING_STAGES = [
   "queued",
@@ -12,19 +14,19 @@ const PROCESSING_STAGES = [
   "synthesizing",
 ] as const;
 
-const STAGE_LABELS: Record<PublicEvaluation["currentStage"], string> = {
-  queued: "Queued",
-  extracting_evidence: "Verifying evidence",
-  scoring: "Applying the rubric",
-  validating: "Checking scores and caps",
-  synthesizing: "Writing the client report",
-  completed: "Report complete",
-  failed: "Evaluation failed",
-};
-
-export function EvaluationView({ initialEvaluation }: { initialEvaluation: PublicEvaluation }) {
+export function EvaluationView({
+  initialEvaluation,
+  initialReports,
+}: {
+  initialEvaluation: PublicEvaluation;
+  initialReports: EvaluationSummary[];
+}) {
   const [evaluation, setEvaluation] = useState(initialEvaluation);
   const [pollingStopped, setPollingStopped] = useState(false);
+  const reports = useMemo(
+    () => mergeCurrentReport(initialReports, evaluation),
+    [initialReports, evaluation],
+  );
 
   useEffect(() => {
     if (evaluation.status === "completed" || evaluation.status === "failed") return;
@@ -53,18 +55,26 @@ export function EvaluationView({ initialEvaluation }: { initialEvaluation: Publi
     };
   }, [evaluation.id, evaluation.status]);
 
-  if (evaluation.status === "completed") return <CompletedReport evaluation={evaluation} />;
-  if (evaluation.status === "failed") return <FailureState evaluation={evaluation} />;
-  return <ProcessingState evaluation={evaluation} pollingStopped={pollingStopped} />;
+  return (
+    <div className="evaluation-workspace">
+      <ReportsSidebar reports={reports} activeReportId={evaluation.id} />
+      <div className="evaluation-canvas">
+        {evaluation.status === "completed" ? (
+          <CompletedReport evaluation={evaluation} />
+        ) : evaluation.status === "failed" ? (
+          <FailureState evaluation={evaluation} />
+        ) : (
+          <ProcessingState evaluation={evaluation} pollingStopped={pollingStopped} />
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ReportHeader({ evaluation }: { evaluation: PublicEvaluation }) {
   return (
     <header className="report-topbar">
-      <Link href="/" className="brand" aria-label="Signal Review home">
-        <span className="brand-mark">S</span>
-        <span>Signal Review</span>
-      </Link>
+      <span className="report-context">Evaluation report</span>
       <div className="report-id">Report {evaluation.id.slice(0, 8).toUpperCase()}</div>
     </header>
   );
@@ -86,7 +96,7 @@ function ProcessingState({
       <section className="status-card" aria-live="polite">
         <div className="status-icon" aria-hidden="true">↗</div>
         <div className="eyebrow">Evaluation in progress</div>
-        <h1>{STAGE_LABELS[evaluation.currentStage]}</h1>
+        <h1>{REPORT_STAGE_LABELS[evaluation.currentStage]}</h1>
         <p>
           This report is stored durably. You can close this tab and return to the same URL at any
           time.
@@ -95,7 +105,7 @@ function ProcessingState({
           {PROCESSING_STAGES.map((stage, index) => (
             <li key={stage} className={index <= activeIndex ? "done" : ""}>
               <span>{index < activeIndex ? "✓" : index + 1}</span>
-              {STAGE_LABELS[stage]}
+              {REPORT_STAGE_LABELS[stage]}
             </li>
           ))}
         </ol>
@@ -297,4 +307,24 @@ function CompletedReport({ evaluation }: { evaluation: PublicEvaluation }) {
 function formatScore(value: number | null): string {
   if (value === null) return "—";
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function mergeCurrentReport(
+  reports: EvaluationSummary[],
+  evaluation: PublicEvaluation,
+): EvaluationSummary[] {
+  const byId = new Map(reports.map((report) => [report.id, report]));
+  byId.set(evaluation.id, {
+    id: evaluation.id,
+    callType: evaluation.callType,
+    status: evaluation.status,
+    currentStage: evaluation.currentStage,
+    createdAt: evaluation.createdAt,
+    completedAt: evaluation.completedAt,
+    finalScore: evaluation.finalScore,
+    grade: evaluation.grade,
+  });
+  return [...byId.values()].sort(
+    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+  );
 }

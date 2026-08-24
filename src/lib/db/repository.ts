@@ -8,6 +8,7 @@ import type {
   CompletedEvaluation,
   EvaluationRecord,
   EvaluationRepository,
+  EvaluationSummary,
   OneThingCalculation,
   StageEnvelope,
   StageResultRecord,
@@ -69,6 +70,17 @@ interface DimensionRow {
   improvement_potential: number | string;
 }
 
+interface EvaluationSummaryRow {
+  id: string;
+  call_type: CallType;
+  status: EvaluationStatus;
+  current_stage: EvaluationStatus;
+  created_at: string;
+  completed_at: string | null;
+  final_score: number | string | null;
+  grade: Grade | null;
+}
+
 const numeric = (value: number | string | null): number | null =>
   value === null ? null : Number(value);
 
@@ -101,6 +113,19 @@ function mapEvaluation(row: EvaluationRow): EvaluationRecord {
     startedAt: row.started_at,
     completedAt: row.completed_at,
     failedAt: row.failed_at,
+  };
+}
+
+function mapEvaluationSummary(row: EvaluationSummaryRow): EvaluationSummary {
+  return {
+    id: row.id,
+    callType: row.call_type,
+    status: row.status,
+    currentStage: row.current_stage,
+    createdAt: row.created_at,
+    completedAt: row.completed_at,
+    finalScore: numeric(row.final_score),
+    grade: row.grade,
   };
 }
 
@@ -160,6 +185,17 @@ export class SupabaseEvaluationRepository implements EvaluationRepository {
       .maybeSingle();
     if (error) throw databaseError(error);
     return data ? mapEvaluation(data as EvaluationRow) : null;
+  }
+
+  async listEvaluations(limit = 100): Promise<EvaluationSummary[]> {
+    const safeLimit = Math.min(Math.max(Math.trunc(limit), 1), 100);
+    const { data, error } = await getSupabaseAdmin()
+      .from("evaluations")
+      .select("id,call_type,status,current_stage,created_at,completed_at,final_score,grade")
+      .order("created_at", { ascending: false })
+      .limit(safeLimit);
+    if (error) throw databaseError(error);
+    return (data as EvaluationSummaryRow[] | null)?.map(mapEvaluationSummary) ?? [];
   }
 
   async getCompletedEvaluation(id: string): Promise<CompletedEvaluation | null> {
