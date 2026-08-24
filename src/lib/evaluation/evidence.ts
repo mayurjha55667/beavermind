@@ -9,12 +9,43 @@ import type {
 } from "@/lib/evaluation/types";
 import { getCriterionCatalog } from "@/lib/rubrics/criteria";
 import { speakingPercentage } from "@/lib/transcript/parser";
-import type { CallFacts, CallType, CriterionState } from "@/schemas/evaluation";
+import type {
+  CallFacts,
+  CallType,
+  CriterionState,
+  CriterionSupportVerdict,
+  RequirementSupportStatus,
+} from "@/schemas/evaluation";
 
 export interface EvidenceValidationError {
   criterionId?: string;
   message: string;
   lineNumbers?: number[];
+}
+
+export function deriveCriterionSupport(
+  statuses: readonly RequirementSupportStatus[],
+  materialAssumptionCount: number,
+): { supportVerdict: CriterionSupportVerdict; state: CriterionState } {
+  if (statuses.length > 0 && statuses.every((status) => status === "NOT_APPLICABLE")) {
+    return { supportVerdict: "NOT_APPLICABLE", state: "NOT_APPLICABLE" };
+  }
+
+  if (
+    statuses.length > 0 &&
+    statuses.every((status) => status === "SUPPORTED") &&
+    materialAssumptionCount === 0
+  ) {
+    return { supportVerdict: "FULLY_SUPPORTED", state: "PRESENT" };
+  }
+
+  const partiallyEstablished =
+    statuses.some((status) => status === "SUPPORTED" || status === "UNVERIFIABLE");
+  if (partiallyEstablished) {
+    return { supportVerdict: "PARTIAL", state: "UNCLEAR" };
+  }
+
+  return { supportVerdict: "NOT_SUPPORTED", state: "ABSENT" };
 }
 
 function criterionConsistencyErrors(
@@ -25,6 +56,17 @@ function criterionConsistencyErrors(
 
   const consistencyErrors: EvidenceValidationError[] = [];
   const present = (id: string): boolean => criterionMap.get(id)?.state === "PRESENT";
+
+  if (
+    present("kickoff.d06.north_star_link") &&
+    !present("kickoff.d06.timeline_or_milestones")
+  ) {
+    consistencyErrors.push({
+      criterionId: "kickoff.d06.north_star_link",
+      message: "A North Star journey link cannot be PRESENT unless a program timeline, progression, or milestone is PRESENT.",
+    });
+  }
+
   const eventIds = [
     "kickoff.d12.first_specific_commitment",
     "kickoff.d12.second_distinct_commitment",
@@ -123,42 +165,146 @@ export function verifyEvidenceLedger(
   const criteria: VerifiedCriterionEvidence[] = facts.criteria.flatMap((result) => {
     const definition = definitions.get(result.criterionId);
     if (!definition) return [];
-    const lineNumbers = [...result.evidenceLineNumbers];
-    if (new Set(lineNumbers).size !== lineNumbers.length) {
-      errors.push({ criterionId: result.criterionId, message: "Criterion evidence lines must be unique.", lineNumbers });
-      return [];
-    }
-    if (result.state === "PRESENT" && lineNumbers.length === 0) {
-      errors.push({ criterionId: result.criterionId, message: "A PRESENT criterion requires at least one evidence line." });
-      return [];
-    }
-    if (lineNumbers.length > definition.maxEvidenceLines) {
+
+    const expectedRequirementIds = definition.requirements.map((requirement) => requirement.id);
+    const suppliedRequirementIds = result.requirementResults.map((requirement) => requirement.requirementId);
+    const suppliedRequirementSet = new Set(suppliedRequirementIds);
+    const missingRequirements = expectedRequirementIds.filter((id) => !suppliedRequirementSet.has(id));
+    const unknownRequirements = [...suppliedRequirementSet].filter(
+      (id) => !expectedRequirementIds.includes(id),
+    );
+    const duplicateRequirements = suppliedRequirementIds.filter(
+      (id, index) => suppliedRequirementIds.indexOf(id) !== index,
+    );
+    if (
+      missingRequirements.length > 0 ||
+      unknownRequirements.length > 0 ||
+      duplicateRequirements.length > 0
+    ) {
       errors.push({
         criterionId: result.criterionId,
-        message: `Criterion permits at most ${definition.maxEvidenceLines} evidence line(s); return only the strongest direct evidence.`,
-        lineNumbers,
+        message: `Requirement IDs must match the criterion contract exactly once. Missing: ${missingRequirements.join(", ") || "none"}; unknown: ${unknownRequirements.join(", ") || "none"}; duplicates: ${[...new Set(duplicateRequirements)].join(", ") || "none"}.`,
       });
       return [];
     }
-    if (result.state !== "PRESENT" && lineNumbers.length > 0) {
-      errors.push({ criterionId: result.criterionId, message: `${result.state} criteria must not claim supporting evidence lines.`, lineNumbers });
+
+    const statuses = result.requirementResults.map((requirement) => requirement.status);
+    const hasNotApplicable = statuses.includes("NOT_APPLICABLE");
+    if (hasNotApplicable && !statuses.every((status) => status === "NOT_APPLICABLE")) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: "NOT_APPLICABLE cannot be mixed with other requirement statuses.",
+      });
       return [];
     }
-    if (result.state === "NOT_APPLICABLE" && !definition.allowNotApplicable) {
-      errors.push({ criterionId: result.criterionId, message: "NOT_APPLICABLE is not permitted for this criterion." });
+    if (hasNotApplicable && !definition.allowNotApplicable) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: "NOT_APPLICABLE is not permitted for this criterion.",
+      });
       return [];
     }
-    const transcriptLines = lineNumbers.map((lineNumber) => transcript.turns[lineNumber - 1]);
-    if (transcriptLines.some((turn) => turn === undefined)) {
-      errors.push({ criterionId: result.criterionId, message: "Criterion references a line that does not exist.", lineNumbers });
+    if (hasNotApplicable && result.materialAssumptions.length > 0) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: "NOT_APPLICABLE criteria cannot include material assumptions.",
+      });
       return [];
     }
+
+    const knownRequirementIds = new Set(expectedRequirementIds);
+    const invalidAssumption = result.materialAssumptions.find(
+      (assumption) => !knownRequirementIds.has(assumption.requirementId),
+    );
+    if (invalidAssumption) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: `Material assumption references unknown requirement ${invalidAssumption.requirementId}.`,
+      });
+      return [];
+    }
+
+    const allLineNumbers = result.requirementResults.flatMap(
+      (requirement) => requirement.evidenceLineNumbers,
+    );
+    const uniqueLineNumbers = [...new Set(allLineNumbers)];
+    if (uniqueLineNumbers.length > definition.maxEvidenceLines) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: `Criterion permits at most ${definition.maxEvidenceLines} evidence line(s) across its complete evidence bundle.`,
+        lineNumbers: uniqueLineNumbers,
+      });
+      return [];
+    }
+
+    for (const requirement of result.requirementResults) {
+      const lineNumbers = requirement.evidenceLineNumbers;
+      if (new Set(lineNumbers).size !== lineNumbers.length) {
+        errors.push({
+          criterionId: result.criterionId,
+          message: `Requirement ${requirement.requirementId} evidence lines must be unique.`,
+          lineNumbers,
+        });
+      }
+      if (
+        (requirement.status === "SUPPORTED" || requirement.status === "CONTRADICTED") &&
+        lineNumbers.length === 0
+      ) {
+        errors.push({
+          criterionId: result.criterionId,
+          message: `${requirement.status} requirement ${requirement.requirementId} requires direct evidence lines.`,
+        });
+      }
+      if (
+        (requirement.status === "NOT_SUPPORTED" || requirement.status === "NOT_APPLICABLE") &&
+        lineNumbers.length > 0
+      ) {
+        errors.push({
+          criterionId: result.criterionId,
+          message: `${requirement.status} requirement ${requirement.requirementId} must not claim evidence lines.`,
+          lineNumbers,
+        });
+      }
+    }
+    const invalidLineNumbers = uniqueLineNumbers.filter(
+      (lineNumber) => transcript.turns[lineNumber - 1] === undefined,
+    );
+    if (invalidLineNumbers.length > 0) {
+      errors.push({
+        criterionId: result.criterionId,
+        message: "Criterion references a line that does not exist.",
+        lineNumbers: invalidLineNumbers,
+      });
+      return [];
+    }
+
+    if (errors.some((error) => error.criterionId === result.criterionId)) return [];
+
+    const requirementResults = result.requirementResults.map((requirement) => ({
+      requirementId: requirement.requirementId,
+      status: requirement.status,
+      evidenceLineNumbers: [...requirement.evidenceLineNumbers],
+      transcriptLines: requirement.evidenceLineNumbers.map(
+        (lineNumber) => transcript.turns[lineNumber - 1]!,
+      ),
+    }));
+    const derived = deriveCriterionSupport(statuses, result.materialAssumptions.length);
+    const supportedLineNumbers = derived.state === "PRESENT"
+      ? [...new Set(
+          requirementResults
+            .filter((requirement) => requirement.status === "SUPPORTED")
+            .flatMap((requirement) => requirement.evidenceLineNumbers),
+        )]
+      : [];
     return [{
       criterionId: result.criterionId,
       dimensionId: definition.dimensionId,
-      state: result.state,
-      evidenceLineNumbers: lineNumbers,
-      transcriptLines: transcriptLines.filter((turn): turn is TranscriptTurn => turn !== undefined),
+      state: derived.state,
+      supportVerdict: derived.supportVerdict,
+      evidenceLineNumbers: supportedLineNumbers,
+      transcriptLines: supportedLineNumbers.map((lineNumber) => transcript.turns[lineNumber - 1]!),
+      requirementResults,
+      materialAssumptions: result.materialAssumptions.map((assumption) => ({ ...assumption })),
     }];
   });
 
@@ -193,10 +339,31 @@ export function verifyEvidenceLedger(
           transcriptLines: verified.transcriptLines,
         };
       });
+    const negativeEvidence: VerifiedEvidenceReference[] = dimensionDefinitions.flatMap((definition) => {
+      const verified = criterionMap.get(definition.id);
+      if (!verified || verified.state === "PRESENT") return [];
+      const requirementDefinitions = new Map(
+        definition.requirements.map((requirement) => [requirement.id, requirement]),
+      );
+      return verified.requirementResults.flatMap((requirement) => {
+        if (
+          requirement.evidenceLineNumbers.length === 0 ||
+          (requirement.status !== "CONTRADICTED" && requirement.status !== "UNVERIFIABLE")
+        ) {
+          return [];
+        }
+        const requirementDefinition = requirementDefinitions.get(requirement.requirementId);
+        return [{
+          lineNumbers: requirement.evidenceLineNumbers,
+          interpretation: `${requirementDefinition?.description ?? definition.description} (${requirement.status.toLowerCase()})`,
+          transcriptLines: requirement.transcriptLines,
+        }];
+      });
+    });
     return {
       dimensionId,
       positiveEvidence,
-      negativeEvidence: [],
+      negativeEvidence,
       missingBehaviours: dimensionDefinitions.flatMap((definition) =>
         !present(definition.id) && definition.missingBehaviour ? [definition.missingBehaviour] : [],
       ),

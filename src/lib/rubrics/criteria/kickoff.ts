@@ -7,9 +7,42 @@ export const KICKOFF_CRITERIA: readonly CriterionDefinition[] = [
   c("kickoff.global.client_engagement_present", 0, "The client participates meaningfully rather than remaining passive.", null),
   c("kickoff.global.unresolved_confusion", 0, "The client leaves with unresolved confusion.", null),
 
-  c("kickoff.d01.specific_goal_from_notes_early", 1, "The coach introduces a specific client goal from pre-call notes before the client supplies it.", "Reference a specific client goal from the intake or sales notes before asking the client to repeat it."),
-  c("kickoff.d01.pain_or_injury_from_notes_early", 1, "The coach introduces a specific pain point or injury from pre-call notes before the client supplies it.", "Reference a known pain point or injury from the intake notes early in the call."),
-  c("kickoff.d01.history_or_context_from_notes_early", 1, "The coach introduces specific history or lifestyle context from pre-call notes before the client supplies it.", "Reference specific history or lifestyle context from the intake notes early in the call."),
+  c("kickoff.d01.specific_goal_from_notes_early", 1, "The coach introduces a specific client goal from pre-call notes before the client supplies it.", "Reference a specific client goal from the intake or sales notes before asking the client to repeat it.", false, 3, {
+    requirements: [
+      { id: "specific_client_goal", description: "The coach states a specific goal belonging to this client." },
+      { id: "known_before_client_disclosure", description: "The coach states the goal before the client supplies it during this call." },
+      { id: "pre_call_source_established", description: "The cited exchange explicitly attributes the goal to intake, sales, or other pre-call notes." },
+    ],
+    excludedInterpretations: [
+      "A goal first disclosed by the client during this call.",
+      "A generic goal that could apply to any client.",
+      "Assuming that prior knowledge came from notes when the transcript does not establish the source.",
+    ],
+  }),
+  c("kickoff.d01.pain_or_injury_from_notes_early", 1, "The coach introduces a specific pain point or injury from pre-call notes before the client supplies it.", "Reference a known pain point or injury from the intake notes early in the call.", false, 3, {
+    requirements: [
+      { id: "specific_client_condition", description: "The coach states a specific pain point or injury belonging to this client." },
+      { id: "known_before_client_disclosure", description: "The coach states the condition before the client supplies it during this call." },
+      { id: "pre_call_source_established", description: "The cited exchange explicitly attributes the condition to intake, sales, or other pre-call notes." },
+    ],
+    excludedInterpretations: [
+      "A condition first disclosed by the client during this call.",
+      "Generic pain screening.",
+      "Assuming that prior knowledge came from notes when the transcript does not establish the source.",
+    ],
+  }),
+  c("kickoff.d01.history_or_context_from_notes_early", 1, "The coach introduces specific history or lifestyle context from pre-call notes before the client supplies it.", "Reference specific history or lifestyle context from the intake notes early in the call.", false, 3, {
+    requirements: [
+      { id: "specific_client_context", description: "The coach states specific history or lifestyle context belonging to this client." },
+      { id: "known_before_client_disclosure", description: "The coach states the context before the client supplies it during this call." },
+      { id: "pre_call_source_established", description: "The cited exchange explicitly attributes the context to intake, sales, or other pre-call notes." },
+    ],
+    excludedInterpretations: [
+      "Context first disclosed by the client during this call.",
+      "Generic rapport or discovery questions.",
+      "Assuming that prior knowledge came from notes when the transcript does not establish the source.",
+    ],
+  }),
   c("kickoff.d01.client_name_used_early", 1, "The coach uses the client's name naturally in the opening.", "Use the client's name naturally in the opening."),
   c("kickoff.d01.notes_acknowledged", 1, "The coach explicitly acknowledges having reviewed the client's notes.", "Acknowledge the intake or sales notes naturally."),
   c("kickoff.d01.partial_note_reference_early", 1, "The coach makes an early, transcript-verifiable surface reference explicitly tied to intake or sales notes, without using a specific goal, pain point, or history detail.", null),
@@ -51,13 +84,46 @@ export const KICKOFF_CRITERIA: readonly CriterionDefinition[] = [
   c("kickoff.d05.generic_phase_reference", 5, "The coach only refers vaguely to phases, steps, or progression.", null),
 
   c("kickoff.d06.basic_expectations", 6, "The coach sets at least basic expectations for what happens next.", "Set clear expectations for what the client should expect next."),
-  c("kickoff.d06.timeline_or_milestones", 6, "A meaningful multi-week or multi-month program journey, progression, or milestone is explained. Immediate action deadlines, the current weekly workout schedule, or the next-call booking do not count.", "Explain the broader timeline and key milestones."),
+  c("kickoff.d06.timeline_or_milestones", 6, "The coach explains a meaningful multi-week or multi-month program path with an intermediate progression, phase, or milestone. A desired end result at a future date is not a program timeline by itself.", "Explain the broader timeline and key milestones.", false, 4, {
+    requirements: [
+      { id: "coach_explains_program_path", description: "The coach explains what the client should expect to happen in the program beyond the current week." },
+      { id: "intermediate_progression_or_milestone", description: "The explanation includes at least one intermediate progression, phase, or milestone distinct from the client's desired end outcome." },
+      { id: "timing_attached_to_program_path", description: "A multi-week or multi-month time horizon is attached to that program path, progression, phase, or milestone." },
+    ],
+    excludedInterpretations: [
+      "A question and answer about what outcome the client wants several months from now.",
+      "A future endpoint goal without an intermediate program path, progression, phase, or milestone.",
+      "An immediate action deadline.",
+      "The client's current weekly workout schedule.",
+      "The date or time of the next call.",
+    ],
+  }),
   c("kickoff.d06.emotional_friction_normalized", 6, "The coach explicitly predicts and normalizes a future difficult, frustrating, or low-motivation period. Generic encouragement such as consistency over perfection does not count.", "Normalize the emotional friction clients may experience."),
   c("kickoff.d06.valley_timing", 6, "Likely valleys or difficult weeks are placed on the timeline.", "Explain when a difficult or low-motivation period commonly appears."),
   c("kickoff.d06.good_vs_bad_pain", 6, "Good discomfort is distinguished from bad pain.", "Explain the difference between productive discomfort and warning-sign pain."),
   c("kickoff.d06.first_month_foundational", 6, "The first month is framed as foundational rather than transformational.", "Frame the first month as foundational rather than transformational."),
-  c("kickoff.d06.north_star_link", 6, "Journey expectations are connected back to the client's North Star.", "Connect journey expectations back to the client's North Star."),
-  c("kickoff.d06.physical_discomfort_normalized", 6, "The coach explicitly explains that some safe soreness or discomfort is expected or normal. Pain screening, referral advice, or a low-impact modification alone do not count.", "Prepare the client for safe, expected physical discomfort."),
+  c("kickoff.d06.north_star_link", 6, "The coach explicitly connects an explained program journey, progression, or milestone back to the client's North Star.", "Connect journey expectations back to the client's North Star.", false, 4, {
+    requirements: [
+      { id: "journey_expectation_present", description: "The coach has explained a program timeline, progression, phase, or milestone." },
+      { id: "explicit_north_star_connection", description: "The coach explicitly connects that journey expectation to the client's North Star." },
+    ],
+    excludedInterpretations: [
+      "Constructing or repeating the North Star without linking it to an explained program journey.",
+      "Saying to remember or return to the North Star when motivation is low without describing a program progression or milestone.",
+      "Treating the client's desired end outcome as both the journey and the North Star link.",
+    ],
+  }),
+  c("kickoff.d06.physical_discomfort_normalized", 6, "The coach explicitly explains that some safe soreness or discomfort is expected or normal. Pain screening, referral advice, or a low-impact modification alone do not count.", "Prepare the client for safe, expected physical discomfort.", false, 3, {
+    requirements: [
+      { id: "safe_discomfort_identified", description: "The coach refers to safe soreness or physical discomfort." },
+      { id: "explicitly_expected_or_normal", description: "The coach explicitly says that this safe discomfort is expected or normal." },
+    ],
+    excludedInterpretations: [
+      "Pain screening without saying discomfort is expected or normal.",
+      "Referral or stop-if-pain advice by itself.",
+      "A low-impact exercise modification by itself.",
+    ],
+  }),
 
   c("kickoff.d07.primary_channel", 7, "The primary support channel is named clearly.", "Name the primary support channel."),
   c("kickoff.d07.response_time", 7, "The coach states an expected response time.", "State when the client can expect a response."),
@@ -68,17 +134,43 @@ export const KICKOFF_CRITERIA: readonly CriterionDefinition[] = [
 
   c("kickoff.d08.behavioral_patterns", 8, "The coach asks about behavioral patterns that have stopped progress before.", "Ask what has stopped progress in the past."),
   c("kickoff.d08.consistency_triggers", 8, "The coach explores triggers that disrupt consistency.", "Explore what typically disrupts the client's consistency."),
-  c("kickoff.d08.learning_style", 8, "The coach asks about learning or coaching style, including push versus support.", "Ask how the client learns best and whether they prefer push or support."),
+  c("kickoff.d08.learning_style", 8, "The coach establishes how the client prefers to learn or receive coaching communication and feedback.", "Ask how the client learns best and how they prefer coaching communication or feedback.", false, 3, {
+    requirements: [
+      { id: "preference_explicitly_explored", description: "The coach explicitly asks about, or the client unambiguously states, a learning or coaching-communication preference." },
+      { id: "learning_or_feedback_delivery", description: "The preference concerns how the client learns, understands, receives explanation, or receives coaching feedback." },
+    ],
+    excludedInterpretations: [
+      "An accountability frequency or reminder preference with no connection to learning or feedback delivery.",
+      "A generic request for more support.",
+      "The coach inferring a learning style without client evidence.",
+    ],
+  }),
   c("kickoff.d08.stress_response", 8, "The transcript explicitly establishes what the client tends to do under stress, either through a direct question and answer or an unambiguous client statement.", "Ask how the client tends to respond under stress."),
   c("kickoff.d08.uses_answers_to_personalize", 8, "The coach uses the answers to personalize the coaching approach.", "Use the client's answers to personalize the coaching approach."),
-  c("kickoff.d08.archetype_signals", 8, "The coach identifies a meaningful client archetype or equivalent behavioral pattern.", "Identify the client's dominant behavioral pattern or coaching archetype."),
+  c("kickoff.d08.archetype_signals", 8, "The coach explicitly synthesizes evidence into a meaningful, coaching-relevant client archetype or dominant behavioral pattern.", "Identify the client's dominant behavioral pattern or coaching archetype.", false, 3, {
+    requirements: [
+      { id: "pattern_synthesized", description: "The coach explicitly synthesizes the client's statements into a recurring or dominant pattern." },
+      { id: "coaching_relevance", description: "The identified pattern is used or framed as relevant to how the client should be coached." },
+    ],
+    excludedInterpretations: [
+      "Merely repeating one isolated behavior described by the client.",
+      "A generic label that is not grounded in the client's statements.",
+      "Treating any mention of all-or-nothing behavior as a complete archetype identification.",
+    ],
+  }),
   c("kickoff.d08.generic_questions_only", 8, "The questions remain generic or logistical rather than behavioral.", null),
 
   c("kickoff.d09.clear_next_steps", 9, "The client receives clear, concrete next steps.", "State clear and concrete next steps."),
   c("kickoff.d09.diagnostics_pipeline", 9, "The diagnostics-to-film-to-upload-to-program-to-start pipeline is explained.", "Explain the complete diagnostics, filming, upload, program, and start workflow."),
   c("kickoff.d09.filming_instructions", 9, "Practical filming instructions such as angle or device are provided.", "Explain how the client should film and upload diagnostic videos."),
   c("kickoff.d09.specific_timeline", 9, "Specific deadlines or start dates are stated.", "Add specific deadlines or start dates to the next steps."),
-  c("kickoff.d09.client_confirms", 9, "The client confirms or teaches back the non-booking next-step workflow. Accepting a calendar date or time alone does not count.", "Ask the client to confirm the next steps in their own words."),
+  c("kickoff.d09.client_confirms", 9, "The client confirms or teaches back the non-booking next-step workflow. Accepting a calendar date or time alone does not count.", "Ask the client to confirm the next steps in their own words.", false, 3, {
+    requirements: [
+      { id: "client_confirmation", description: "The client verbally confirms or teaches back what they will do next." },
+      { id: "non_booking_workflow", description: "The confirmation concerns the substantive post-call workflow, not only the next appointment." },
+    ],
+    excludedInterpretations: ["Accepting a calendar date or time without confirming the non-booking workflow."],
+  }),
   c("kickoff.d09.demo_or_screen_share", 9, "A demo or screen share removes remaining process ambiguity.", "Demonstrate the handoff process or show it on screen."),
   c("kickoff.d09.partial_instructions", 9, "Some instructions are present, but important details remain vague.", null),
 
@@ -91,13 +183,61 @@ export const KICKOFF_CRITERIA: readonly CriterionDefinition[] = [
   c("kickoff.d10.booking_reference_only", 10, "Booking is only referenced in passing without a concrete live attempt.", null),
 
   c("kickoff.d11.positive_close", 11, "The call ends positively rather than abruptly.", "End the call with a positive, intentional close."),
-  c("kickoff.d11.structured_recap", 11, "The coach gives a structured recap of what was covered.", "Give a short, structured recap of what was covered."),
-  c("kickoff.d11.confidence_anchor", 11, "The coach explicitly reinforces the client's capability or affirms that they can succeed. Asking for a confidence rating or offering generic plan encouragement does not count.", "Add a clear confidence anchor."),
+  c("kickoff.d11.structured_recap", 11, "During the closing portion, the coach gives a structured recap of at least two distinct substantive topics covered during the call, not only the action list.", "Give a short, structured recap of what was covered.", false, 4, {
+    requirements: [
+      { id: "closing_recap", description: "The recap occurs during the closing portion after the substantive discussion." },
+      { id: "multiple_substantive_topics", description: "The coach summarizes at least two distinct substantive topics already covered, beyond only actions, commitments, or scheduling." },
+    ],
+    excludedInterpretations: [
+      "A mid-call action plan or transition into next steps.",
+      "A list or repetition of client and coach commitments only.",
+      "A booking confirmation or scheduling summary.",
+      "A generic positive close without a recap of substantive topics.",
+    ],
+  }),
+  c("kickoff.d11.confidence_anchor", 11, "The coach explicitly reinforces the client's capability or affirms that they can succeed. Asking for a confidence rating or offering generic plan encouragement does not count.", "Add a clear confidence anchor.", false, 3, {
+    requirements: [
+      { id: "explicit_capability_affirmation", description: "The coach explicitly states that the client is capable, can succeed, or has demonstrated a reason to believe in their ability." },
+    ],
+    excludedInterpretations: [
+      "Asking the client to rate their own confidence.",
+      "Generic encouragement about the plan without affirming the client's capability.",
+      "A generic positive word such as great or excellent.",
+    ],
+  }),
   c("kickoff.d11.emotional_excitement", 11, "The coach expresses specific, earned excitement about the client's journey or progress. A generic approval such as 'excellent' alone does not count.", "Express specific, earned excitement about the client's journey."),
 
-  c("kickoff.d12.first_specific_commitment", 12, "A first distinct future coach action is explicitly promised. An action completed during the call, a client action, or several artifacts bundled into one promised send count as no more than one coach commitment event.", "Make at least one specific post-call commitment."),
-  c("kickoff.d12.second_distinct_commitment", 12, "A second distinct future coach action or event is explicitly promised on a different evidence line from the first commitment.", "Add a second distinct post-call commitment."),
-  c("kickoff.d12.third_distinct_commitment", 12, "A third distinct future coach action or event is explicitly promised on a third evidence line.", "Add another explicit post-call commitment where useful."),
+  c("kickoff.d12.first_specific_commitment", 12, "A first distinct future coach action is explicitly promised. An action completed during the call, a client action, or several artifacts bundled into one promised send count as no more than one coach commitment event.", "Make at least one specific post-call commitment.", false, 1, {
+    requirements: [
+      { id: "coach_owned_future_action", description: "The coach explicitly promises a specific action they will perform after the current call." },
+    ],
+    excludedInterpretations: [
+      "An action completed during the call.",
+      "An action owned by the client.",
+      "The already-booked next call.",
+      "Several artifacts bundled into one promised send as multiple events.",
+    ],
+  }),
+  c("kickoff.d12.second_distinct_commitment", 12, "A second distinct future coach action or event is explicitly promised on a different evidence line from the first commitment.", "Add a second distinct post-call commitment.", false, 1, {
+    requirements: [
+      { id: "second_coach_owned_future_action", description: "The coach explicitly promises a second coach-owned post-call action distinct from the first event." },
+    ],
+    excludedInterpretations: [
+      "A second artifact included in the same promised send.",
+      "An action owned by the client.",
+      "The already-booked next call.",
+    ],
+  }),
+  c("kickoff.d12.third_distinct_commitment", 12, "A third distinct future coach action or event is explicitly promised on a third evidence line.", "Add another explicit post-call commitment where useful.", false, 1, {
+    requirements: [
+      { id: "third_coach_owned_future_action", description: "The coach explicitly promises a third coach-owned post-call action distinct from the first two events." },
+    ],
+    excludedInterpretations: [
+      "Another artifact included in an already-counted promised send.",
+      "An action owned by the client.",
+      "The already-booked next call.",
+    ],
+  }),
   c("kickoff.d12.precise_timing_all", 12, "Every verified future coach commitment event has a precise deadline or scheduled time.", "Attach precise timing to every post-call commitment.", false, 3),
   c("kickoff.d12.mostly_precise_timing", 12, "Most, but not all, verified future coach commitment events have a precise deadline or scheduled time.", null, false, 3),
   c("kickoff.d12.vague_follow_up_only", 12, "Only a vague promise to follow up is present.", null),

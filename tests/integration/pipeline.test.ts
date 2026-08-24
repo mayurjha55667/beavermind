@@ -47,7 +47,7 @@ describe("four-stage evaluation integration", () => {
     const repository = new InMemoryRepository();
     const invalid = () => {
       const facts = makeFacts();
-      facts.criteria[0]!.evidenceLineNumbers = [999];
+      facts.criteria[0]!.requirementResults[0]!.evidenceLineNumbers = [999];
       return facts;
     };
     const provider = new QueueProvider({ call_facts: [invalid(), invalid()] });
@@ -86,7 +86,7 @@ describe("four-stage evaluation integration", () => {
     const repository = new InMemoryRepository();
     const invalid = () => {
       const facts = makeFacts();
-      facts.criteria[0]!.evidenceLineNumbers = [];
+      facts.criteria[0]!.requirementResults[0]!.evidenceLineNumbers = [];
       return facts;
     };
     const provider = new QueueProvider({

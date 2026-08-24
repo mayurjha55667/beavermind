@@ -30,9 +30,27 @@ export function scoreVerifiedCriteria(
           (definition.id === 4 && !evidence.movementCoachingPresent));
       const dimensionCriteria = catalog.filter((criterion) => criterion.dimensionId === definition.id);
       const presentCriteria = dimensionCriteria.filter((criterion) => view.present(criterion.id));
-      const evidenceLineNumbers = [...new Set(
-        presentCriteria.flatMap((criterion) => view.lines(criterion.id).slice(0, 1)),
-      )].sort((a, b) => a - b).slice(0, 6);
+      const reportablePresentCriteria = presentCriteria.filter(
+        (criterion) => criterion.missingBehaviour !== null,
+      );
+      const selectedPresentCriteria = [] as typeof reportablePresentCriteria;
+      const selectedEvidenceLineNumbers = new Set<number>();
+      for (const criterion of reportablePresentCriteria) {
+        if (selectedPresentCriteria.length >= 4) break;
+        const completeBundle = [...new Set(view.lines(criterion.id))].sort((a, b) => a - b);
+        const additionalLines = completeBundle.filter(
+          (lineNumber) => !selectedEvidenceLineNumbers.has(lineNumber),
+        );
+        if (
+          selectedPresentCriteria.length > 0 &&
+          selectedEvidenceLineNumbers.size + additionalLines.length > 8
+        ) {
+          continue;
+        }
+        selectedPresentCriteria.push(criterion);
+        for (const lineNumber of completeBundle) selectedEvidenceLineNumbers.add(lineNumber);
+      }
+      const evidenceLineNumbers = [...selectedEvidenceLineNumbers].sort((a, b) => a - b);
 
       if (disabled) {
         return {
@@ -73,9 +91,7 @@ export function scoreVerifiedCriteria(
                 ? [criterion.missingBehaviour]
                 : [],
             );
-      const verifiedDescriptions = presentCriteria
-        .filter((criterion) => criterion.missingBehaviour !== null)
-        .slice(0, 4)
+      const verifiedDescriptions = selectedPresentCriteria
         .map((criterion) => criterion.description);
       const reasoning = verifiedDescriptions.length > 0
         ? `Verified criteria: ${verifiedDescriptions.join(" ")} The deterministic ${callType} rubric maps these facts to ${band} (${formatScore(score)}/${definition.maxScore}).`

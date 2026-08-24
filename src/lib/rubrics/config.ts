@@ -1,8 +1,8 @@
 import type { VerifiedEvidenceLedger } from "@/lib/evaluation/types";
 import type { CallType, DimensionBand, Grade } from "@/schemas/evaluation";
 
-export const PROMPT_VERSION = "evaluation-v1.3.0";
-export const STAGE_SCHEMA_VERSION = "v5";
+export const PROMPT_VERSION = "evaluation-v1.4.1-strict-entailment";
+export const STAGE_SCHEMA_VERSION = "v7";
 
 export interface BandBucket {
   band: Exclude<DimensionBand, "N/A">;
@@ -318,13 +318,13 @@ const COACHING_CAPS: readonly CapDefinition[] = [
 const RUBRICS: Record<CallType, RubricConfig> = {
   kickoff: {
     callType: "kickoff",
-    version: "kickoff-source-main-2026-08-24",
+    version: "kickoff-source-main-2026-08-25",
     dimensions: KICKOFF_DIMENSIONS,
     caps: KICKOFF_CAPS,
   },
   coaching: {
     callType: "coaching",
-    version: "coaching-source-main-2026-08-24",
+    version: "coaching-source-main-2026-08-25",
     dimensions: COACHING_DIMENSIONS,
     caps: COACHING_CAPS,
   },

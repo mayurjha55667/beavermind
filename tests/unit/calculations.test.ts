@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateAndCalculate } from "@/lib/evaluation/calculations";
 import { verifyEvidenceLedger } from "@/lib/evaluation/evidence";
 import { parseTranscript } from "@/lib/transcript/parser";
-import { fixture, makeFacts, makeScoring, SIMPLE_TRANSCRIPT } from "../helpers";
+import { fixture, makeFacts, makeScoring, setCriterionState, SIMPLE_TRANSCRIPT } from "../helpers";
 
 function calculate(
   callType: "kickoff" | "coaching",
@@ -95,12 +95,9 @@ describe("deterministic calculations", () => {
       diagnosticsApplicable: false,
     });
     facts.criteria.forEach((criterion) => {
-      criterion.state = "ABSENT";
-      criterion.evidenceLineNumbers = [];
+      setCriterionState(facts, criterion.criterionId, "ABSENT");
     });
-    facts.criteria.find((criterion) =>
-      criterion.criterionId === "coaching.d02.diagnostics_applicable"
-    )!.state = "NOT_APPLICABLE";
+    setCriterionState(facts, "coaching.d02.diagnostics_applicable", "NOT_APPLICABLE");
     const scoring = makeScoring("coaching", { 2: null, 4: null });
     scoring.dimensions.forEach((dimension) => {
       dimension.evidenceLineNumbers = [];

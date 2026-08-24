@@ -1,0 +1,560 @@
+S I G N A L R E V I E W · B E AV E R M I N D E X E R C I S E
+
+
+
+
+Call quality evaluation
+Kick-off call
+Evaluated August 24, 2026
+Report b17d5fc2-a0b7-4b7c-8630-614fa02a1d52
+
+
+
+
+52.5                       / 100                               FA I L
+SIGNAL REVIEW                                           EXECUTIVE REVIEW                                        B17D5FC2
+
+
+
+
+     THE ONE THING                                                 SCORE MECHANICS
+
+
+     Lead with evidence of Pre-Call                                FAIL
+     Preparation                                                   Raw 52.5 / 100
+
+     Before asking broad discovery questions,                      Normalized 52.5 / 100
+
+     reference one specific goal plus a relevant pain              Final 52.5 / 100
+
+     point, health consideration, or lifestyle detail
+     from the intake or sales notes, then invite
+     Alex to confirm or expand. Alex introduced
+     the stress pattern, weight-and-energy goal, and
+     knee stiffness during the call rather than hearing
+     known context reflected back first (lines 8, 12,
+     26). This verified change would move Pre-Call
+     Preparation from 0/10 to 10/10 and raise the
+     final score from 52.5 to 62.5.
+
+
+     52.5 to 62.5 (+10)
+
+
+
+COACH BRIEF
+
+
+
+How the call landed
+You created a warm, personalized kickoff and did especially well uncovering Alex’s deeper motivation, converting
+it into a confirmed North Star, agreeing concrete first actions, and booking the next call live. Your accountability
+commitments were also precise and time-bound. However, the call scored 52.5 and received a FAIL because key
+kickoff foundations were missing. Most importantly, you did not demonstrate that you had reviewed Alex’s intake or
+sales context before the call. The client experience also lacked a clear three-phase program explanation, realistic
+preparation for motivational and physical friction, and complete clarity on how between-session support works. Keep
+the strong discovery and execution, but make the kickoff feel informed from the first minutes and connect the first-week
+plan to a clearly explained longer-term journey.
+
+
+
+
+Evidence-grounded · Deterministically scored                                                           Report b17d5fc2 · 2 / 15
+SIGNAL REVIEW                                         RISK REVIEW                                           B17D5FC2
+
+
+
+
+RED FLAGS
+
+
+
+Evidence-backed risks
+HIGH RISK
+
+The kickoff may feel generic or repetitive
+Alex had to supply the stress pattern, desired outcome, and knee consideration during the conversation. Without first
+reflecting known intake context, the client may question whether their history was reviewed or whether the coaching
+is genuinely personalized—an early trust and retention risk.
+Evidence: L8, L12, L26
+
+
+
+HIGH RISK
+
+No clear program roadmap was established
+You framed a six-month outcome and then moved to immediate workouts and meal preparation, but did not explain
+the three program phases, their order, or what Alex should gain from each. This can leave the client unclear about
+the value and progression of the program, increasing the risk of impatience or disengagement when results are not
+immediate.
+Evidence: L11, L12, L45
+
+
+
+MEDIUM RISK
+
+Support access remains ambiguous
+You personalized a Friday accountability check-in, but did not name the primary support channel, expected response
+time, or how Alex should contact you when support is needed before that check-in. Ambiguity during a difficult week
+can become a preventable client-experience failure.
+Evidence: L51, L52, L53
+
+
+
+
+Evidence-grounded · Deterministically scored                                                       Report b17d5fc2 · 3 / 15
+SIGNAL REVIEW                                               DIMENSION SCORECARD                                           B17D5FC2
+
+
+
+
+FULL SCORECARD
+
+
+
+Twelve dimensions
+
+D01                                                                                                                              0 / 10
+                        Pre-Call Preparation
+W HY THIS SCORE
+Verified criteria: The coach uses the client's name naturally in the opening. The deterministic kickoff rubric maps these
+facts to FAIL (0/10).
+
+V E RIFIED EVIDENCE
+
+
+  L1 Coach Maya: Hi Alex, welcome. Before we begin, can you hear and see me clearly?
+
+
+
+MISS ING BEHAVIOURS
+• Reference a specific client goal from the intake or sales notes before asking the client to repeat it.
+• Reference a known pain point or injury from the intake notes early in the call.
+• Reference specific history or lifestyle context from the intake notes early in the call.
+• Acknowledge the intake or sales notes naturally.
+
+
+
+   QUICK FIX
+
+   Next improvement: Reference a specific client goal from the intake or sales notes before asking the client to repeat it.
+
+   Potential final-score lift: +10
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                     Report b17d5fc2 · 4 / 15
+SIGNAL REVIEW                                              DIMENSION SCORECARD                                                     B17D5FC2
+
+
+
+
+D02                                                                                                                                       7 / 10
+                        Rapport & Tone
+W HY THIS SCORE
+Verified criteria: The coach maintains a warm, calm, professional tone. The interaction is personalized to the client
+rather than generic. The deterministic kickoff rubric maps these facts to STRONG (7/10).
+
+V E RIFIED EVIDENCE
+
+
+  L1 Coach Maya: Hi Alex, welcome. Before we begin, can you hear and see me clearly?
+  L19 Coach Maya: Let’s use being an active role model for your children as your North Star. We can return to it when motivation is low. Does
+  that language work for you?
+
+
+
+MISS ING BEHAVIOURS
+• Match the client's energy more deliberately.
+• Add one brief, relevant human connection point.
+• Create enough safety and curiosity for the client to open up beyond prompted answers.
+
+
+
+   QUICK FIX
+
+   Next improvement: Match the client's energy more deliberately.
+
+   Potential final-score lift: +3
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                              Report b17d5fc2 · 5 / 15
+SIGNAL REVIEW                                              DIMENSION SCORECARD                                                      B17D5FC2
+
+
+
+
+D03                                                                                                                                         3/5
+                         Agenda Framing
+W HY THIS SCORE
+Verified criteria: The coach intentionally frames what the call will cover. The agenda includes connection or discovery.
+The agenda includes goals or success alignment. The agenda includes program, journey, or support explanation. The
+deterministic kickoff rubric maps these facts to MID (3/5).
+
+V E RIFIED EVIDENCE
+
+
+  L3 Coach Maya: Great. Today I’d like to understand what brought you here, clarify what success looks like, review the support available to
+  you, and agree on your first actions. Is there anything else you want us to cover?
+
+
+
+MISS ING BEHAVIOURS
+• State the available time window at the outset.
+• Ask for and receive explicit client agreement to the agenda.
+
+
+
+   QUICK FIX
+
+   Next improvement: State the available time window at the outset.
+
+   Potential final-score lift: +2
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                               Report b17d5fc2 · 6 / 15
+SIGNAL REVIEW                                                DIMENSION SCORECARD                                                   B17D5FC2
+
+
+
+
+D04                                                                                                                                     10 / 15
+                       Goal Alignment & Deep Why
+W HY THIS SCORE
+Verified criteria: The client's functional or physical goal is identified. The coach asks a first meaningful why follow-up.
+The coach asks a second meaningful why follow-up. An emotional or identity-based driver is explicitly uncovered. The
+deterministic kickoff rubric maps these facts to STRONG (10/15).
+
+V E RIFIED EVIDENCE
+
+
+  L12 Client Alex: I’d like to lose eight to ten kilos, improve my energy, and feel comfortable in my clothes again.
+  L13 Coach Maya: Beyond the number on the scale, why does that matter to you?
+  L17 Coach Maya: If nothing changed during the next year, what would concern you most?
+  L18 Client Alex: My health getting worse and my children seeing me treat exercise as something unpleasant.
+  L19 Coach Maya: Let’s use being an active role model for your children as your North Star. We can return to it when motivation is low. Does
+  that language work for you?
+
+
+
+MISS ING BEHAVIOURS
+• Define a specific 30-day success metric connected to the North Star.
+
+
+
+   QUICK FIX
+
+   Next improvement: Define a specific 30-day success metric connected to the North Star.
+
+   Potential final-score lift: +5
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                              Report b17d5fc2 · 7 / 15
+SIGNAL REVIEW                                            DIMENSION SCORECARD                                    B17D5FC2
+
+
+
+
+D05                                                                                                                    0 / 10
+                        Program Explanation (3 Phases)
+W HY THIS SCORE
+No positive transcript-backed criterion for this dimension was verified. The deterministic kickoff rubric maps the result
+to FAIL (0/10).
+
+V E RIFIED EVIDENCE
+No supporting transcript evidence was verified.
+
+MISS ING BEHAVIOURS
+• Explain the first foundation or retraining phase.
+• Explain the second build or remodeling phase.
+• Explain the third integration phase.
+• Present the three phases in their correct order.
+• Explain what the client should gain from each phase.
+
+
+
+   QUICK FIX
+
+   Next improvement: Explain the first foundation or retraining phase.
+
+   Potential final-score lift: +10
+
+
+
+
+Evidence-grounded · Deterministically scored                                                           Report b17d5fc2 · 8 / 15
+SIGNAL REVIEW                                              DIMENSION SCORECARD                                                     B17D5FC2
+
+
+
+
+D06                                                                                                                                       3 / 10
+                        Journey & Expectation Setting
+W HY THIS SCORE
+Verified criteria: The coach sets at least basic expectations for what happens next. A meaningful multi-week or
+multi-month program journey, progression, or milestone is explained. Immediate action deadlines, the current weekly
+workout schedule, or the next-call booking do not count. Journey expectations are connected back to the client's North
+Star. The deterministic kickoff rubric maps these facts to MID (3/10).
+
+V E RIFIED EVIDENCE
+
+
+  L11 Coach Maya: What would you most like to change over the next six months?
+  L19 Coach Maya: Let’s use being an active role model for your children as your North Star. We can return to it when motivation is low. Does
+  that language work for you?
+  L45 Coach Maya: Great. Your actions are two scheduled workouts and three prepared lunches. My action is to send you the beginner
+  low-impact session and the meal-building guide by 5:00 p.m. today.
+
+
+
+MISS ING BEHAVIOURS
+• Normalize the emotional friction clients may experience.
+• Explain when a difficult or low-motivation period commonly appears.
+• Explain the difference between productive discomfort and warning-sign pain.
+• Frame the first month as foundational rather than transformational.
+• Prepare the client for safe, expected physical discomfort.
+
+
+
+   QUICK FIX
+
+   Next improvement: Normalize the emotional friction clients may experience.
+
+   Potential final-score lift: +7
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                              Report b17d5fc2 · 9 / 15
+SIGNAL REVIEW                                             DIMENSION SCORECARD                                                   B17D5FC2
+
+
+
+
+D07                                                                                                                                     3/5
+                         Support System Clarity
+W HY THIS SCORE
+Verified criteria: The coach asks or explains the preferred accountability style. At least one actual between-session
+support behavior is described. An agenda promise to discuss support later does not count. The deterministic kickoff
+rubric maps these facts to MID (3/5).
+
+V E RIFIED EVIDENCE
+
+
+  L51 Coach Maya: Exactly. We’re aiming for consistency, not perfection. How would you like me to hold you accountable?
+  L53 Coach Maya: I’ll message you Friday afternoon and ask specifically about the two workouts and three lunches.
+
+
+
+MISS ING BEHAVIOURS
+• Name the primary support channel.
+• State when the client can expect a response.
+• Explain how the client accesses and uses the community.
+• Check that the client knows how and when to reach the coach.
+
+
+
+   QUICK FIX
+
+   Next improvement: Name the primary support channel.
+
+   Potential final-score lift: +2
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                          Report b17d5fc2 · 10 / 15
+SIGNAL REVIEW                                              DIMENSION SCORECARD                                                     B17D5FC2
+
+
+
+
+D08                                                                                                                                       7 / 10
+                        Coaching Intelligence Questions
+W HY THIS SCORE
+Verified criteria: The coach asks about behavioral patterns that have stopped progress before. The coach explores
+triggers that disrupt consistency. The transcript explicitly establishes what the client tends to do under stress, either
+through a direct question and answer or an unambiguous client statement. The coach uses the answers to personalize
+the coaching approach. The deterministic kickoff rubric maps these facts to STRONG (7/10).
+
+V E RIFIED EVIDENCE
+
+
+  L7 Coach Maya: What usually causes you to stop?
+  L9 Coach Maya: So the recurring pattern is stress, missed routines, convenience food, and then an all-or-nothing reaction. Does that feel
+  accurate?
+  L52 Client Alex: A short message on Friday would help.
+
+
+
+MISS ING BEHAVIOURS
+• Ask how the client learns best and how they prefer coaching communication or feedback.
+
+
+
+   QUICK FIX
+
+   Next improvement: Ask how the client learns best and how they prefer coaching communication or feedback.
+
+   Potential final-score lift: +3
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                             Report b17d5fc2 · 11 / 15
+SIGNAL REVIEW                                             DIMENSION SCORECARD                                                    B17D5FC2
+
+
+
+
+D09                                                                                                                                     7 / 10
+                        Next Steps & Diagnostics
+W HY THIS SCORE
+Verified criteria: The client receives clear, concrete next steps. Specific deadlines or start dates are stated. The client
+confirms or teaches back the non-booking next-step workflow. Accepting a calendar date or time alone does not count.
+The deterministic kickoff rubric maps these facts to STRONG (7/10).
+
+V E RIFIED EVIDENCE
+
+
+  L45 Coach Maya: Great. Your actions are two scheduled workouts and three prepared lunches. My action is to send you the beginner
+  low-impact session and the meal-building guide by 5:00 p.m. today.
+  L60 Client Alex: I’ll add the workouts to my calendar today, train Tuesday and Thursday at 7:00 a.m. with Saturday as backup, shop Sunday
+  morning, and prepare three lunches Sunday afternoon.
+
+
+
+MISS ING BEHAVIOURS
+• Explain the complete diagnostics, filming, upload, program, and start workflow.
+• Explain how the client should film and upload diagnostic videos.
+• Demonstrate the handoff process or show it on screen.
+
+
+
+   QUICK FIX
+
+   Next improvement: Explain the complete diagnostics, filming, upload, program, and start workflow.
+
+   Potential final-score lift: +3
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                           Report b17d5fc2 · 12 / 15
+SIGNAL REVIEW                                            DIMENSION SCORECARD                                                  B17D5FC2
+
+
+
+
+D10                                                                                                                                   5/5
+                         Booking Next Call
+W HY THIS SCORE
+Verified criteria: The coach makes a concrete attempt to book the next call live. A specific next-call date is confirmed
+verbally. A specific next-call time is confirmed verbally. The client verbally accepts the date and time. The deterministic
+kickoff rubric maps these facts to ELITE (5/5).
+
+V E RIFIED EVIDENCE
+
+
+  L55 Coach Maya: Let’s book our next call now. I have Tuesday, September 8 at 6:00 p.m. or Wednesday, September 9 at 7:00 p.m.
+  L56 Client Alex: Tuesday, September 8 at 6:00 p.m. works.
+
+
+
+MISS ING BEHAVIOURS
+No rubric behaviour was explicitly missing.
+
+
+   QUICK FIX
+
+   Maintain the verified behaviours consistently.
+
+   Potential final-score lift: +0
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                        Report b17d5fc2 · 13 / 15
+SIGNAL REVIEW                                                 DIMENSION SCORECARD                                                        B17D5FC2
+
+
+
+
+D11                                                                                                                                              3/5
+                         Close, Recap & Confidence
+W HY THIS SCORE
+Verified criteria: The call ends positively rather than abruptly. The coach gives a structured recap of what was covered.
+The deterministic kickoff rubric maps these facts to MID (3/5).
+
+V E RIFIED EVIDENCE
+
+
+  L45 Coach Maya: Great. Your actions are two scheduled workouts and three prepared lunches. My action is to send you the beginner
+  low-impact session and the meal-building guide by 5:00 p.m. today.
+  L65 Coach Maya: Excellent. Your goal this week is to collect evidence that you can follow a realistic plan, not to be perfect. I’ll speak with you
+  on September 8.
+
+
+
+MISS ING BEHAVIOURS
+• Add a clear confidence anchor.
+• Express specific, earned excitement about the client's journey.
+
+
+
+   QUICK FIX
+
+   Next improvement: Add a clear confidence anchor.
+
+   Potential final-score lift: +2
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                                   Report b17d5fc2 · 14 / 15
+SIGNAL REVIEW                                            DIMENSION SCORECARD                                                   B17D5FC2
+
+
+
+
+D12                                                                                                                                  4.5 / 5
+                       Post-Call Execution
+W HY THIS SCORE
+Verified criteria: A first distinct future coach action is explicitly promised. An action completed during the call, a client
+action, or several artifacts bundled into one promised send count as no more than one coach commitment event. A
+second distinct future coach action or event is explicitly promised on a different evidence line from the first commitment.
+Every verified future coach commitment event has a precise deadline or scheduled time. The deterministic kickoff
+rubric maps these facts to ELITE (4.5/5).
+
+V E RIFIED EVIDENCE
+
+
+  L45 Coach Maya: Great. Your actions are two scheduled workouts and three prepared lunches. My action is to send you the beginner
+  low-impact session and the meal-building guide by 5:00 p.m. today.
+  L53 Coach Maya: I’ll message you Friday afternoon and ask specifically about the two workouts and three lunches.
+
+
+
+MISS ING BEHAVIOURS
+• Add another explicit post-call commitment where useful.
+
+
+
+   QUICK FIX
+
+   Next improvement: Add another explicit post-call commitment where useful.
+
+   Potential final-score lift: +0.5
+
+
+
+
+Evidence-grounded · Deterministically scored                                                                         Report b17d5fc2 · 15 / 15
+

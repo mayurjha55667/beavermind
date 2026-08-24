@@ -33,15 +33,18 @@ The deployment is a single Next.js application. Vercel Workflow supplies durable
 
 ### 1. Evidence and call facts
 
-`src/lib/transcript/parser.ts` normalizes harmless whitespace, preserves the original input, requires `[Speaker]: text`, and creates stable one-based canonical turns. The entire numbered transcript and entire applicable source rubric are sent in one request; the transcript is not arbitrarily chunked because evidence for a dimension can occur at distant points in a call.
+`src/lib/transcript/parser.ts` normalizes harmless whitespace, preserves the original input, requires `[Speaker]: text`, and creates stable one-based canonical turns. The entire numbered transcript and the controlled atomic requirement catalog are sent in one request; the transcript is not arbitrarily chunked because evidence for a criterion can occur at distant points in a call. The longer source-rubric prose is not duplicated into this request, which keeps the semantic task focused on the executable criterion contracts.
 
-The model identifies the coach/client speakers and classifies the complete controlled criterion catalog. For each criterion it may return only `criterionId`, `PRESENT | ABSENT | UNCLEAR | NOT_APPLICABLE`, and canonical evidence line numbers. It does not write quotes, dimension scores, bands, reasoning, gaps, caps, totals, or report copy. `src/lib/evaluation/evidence.ts` then checks that:
+The model identifies the coach/client speakers and evaluates each required part of every criterion under a strict-reviewer test. It may return only controlled requirement statuses (`SUPPORTED`, `NOT_SUPPORTED`, `CONTRADICTED`, `UNVERIFIABLE`, or `NOT_APPLICABLE`), canonical evidence line numbers, and material assumptions. It does not choose the final criterion state, reproduce quotes, assign scores, choose bands, calculate totals, or write report copy. `src/lib/evaluation/evidence.ts` then checks that:
 
-- every applicable catalog ID occurs exactly once, with no unknown IDs;
-- every `PRESENT` criterion cites at least one unique line that exists;
-- non-present criteria claim no supporting lines;
+- every criterion and requirement ID occurs exactly once, with no unknown IDs;
+- every supported or contradicted requirement cites direct lines that exist;
+- unsupported requirements claim no evidence lines;
 - `NOT_APPLICABLE` is accepted only where the source rubric explicitly permits it;
-- identified coach and client speakers exist.
+- identified coach and client speakers exist;
+- each complete evidence bundle remains within its criterion-specific line limit.
+
+Application code derives the criterion state: all requirements supported with no material assumptions becomes `PRESENT`; partial or unverifiable support becomes `UNCLEAR`; no supported requirement becomes `ABSENT`; and valid inapplicability becomes `NOT_APPLICABLE`. `UNCLEAR` receives no scoring credit. Contradicted and limiting lines are retained as negative evidence for the audit trail.
 
 Application code reconstructs displayed evidence verbatim from the stored transcript turns. There is no model-authored quotation to validate or publish. An invalid classification receives one correction attempt with controlled validation errors; a second failure stops the run safely.
 
@@ -244,11 +247,11 @@ curl -o report.pdf http://localhost:3000/api/evaluations/<uuid>/pdf
 1. **D2 N/A redistribution:** D3 and D4 retain their original discrete scores. With active D4, five maximum-weight points go to each proportionally; with disabled D4, all ten go to D3. Totals remain 100 or 85.
 2. **Coaching source arithmetic:** the published coaching dimension maxima add to 105 although the same rubric explicitly declares 100, and 85 with D4 disabled. To honor the declared totals and preserve the full ten-point D2 redistribution, D5 keeps its displayed/scored `0/3/7/10` bucket but carries five effective points. This is visible in report data and is a required client clarification; it is not hidden.
 3. **Speaking share:** calculated deterministically from non-whitespace transcript characters by identified speaker. The qualitative engagement condition is a controlled atomic criterion, not free-form model reasoning.
-4. **No chunking:** the full transcript and rubric must fit the chosen model context. Inputs above 100,000 characters are rejected instead of silently truncated.
+4. **No chunking:** the full transcript and atomic requirement catalog must fit the chosen model context. Inputs above 100,000 characters are rejected instead of silently truncated.
 5. **Polling:** controlled polling is used instead of Supabase Realtime to avoid exposing a browser Supabase key. It pauses after 15 minutes while durable work continues; refresh always obtains current state.
 6. **PDF storage:** PDFs are rendered on demand from durable report rows and can be cached. A storage bucket is unnecessary at this exercise volume.
 7. **Public-link privacy:** UUID secrecy is the access model because authentication is out of scope. Revocation/expiry requires a product decision.
-8. **Source rubric packaging:** complete rubric Markdown is checked in and file-traced into the server/workflow bundle; deterministic rules live separately in TypeScript.
+8. **Source rubric packaging:** complete rubric Markdown remains checked in as the human-readable source; executable semantic contracts and deterministic scoring rules live separately in TypeScript.
 
 ## Client clarification questions
 
@@ -268,7 +271,7 @@ Within exercise scope, this build uses polling, on-demand PDFs, one provider, an
 
 1. Submit one strong and one weak supplied transcript; copy the UUID and close the tab during processing.
 2. Show the Workflow timeline and Supabase stage rows to demonstrate durability/idempotency.
-3. Open the atomic criterion schema and show that it contains no model quote, score, reasoning, or missing-behaviour fields.
+3. Open the atomic requirement schema and show that the model returns support statuses, line references, and material assumptions—but no quote, final criterion verdict, score, or missing-behaviour fields.
 4. Open the 24 scoring functions and deterministic calculations; demonstrate a cap, D4 disable, D2 redistribution, and “one thing” simulation.
 5. Reopen the report URL, inspect a dimension, and download the PDF.
 6. Run the tests and show the exact 52.5 regression, exhaustive scoring branches, internal-language guard, and provider-failure case.

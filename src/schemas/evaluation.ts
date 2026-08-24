@@ -34,19 +34,55 @@ export type Grade = z.infer<typeof GradeSchema>;
 export const CriterionStateSchema = z.enum(["PRESENT", "ABSENT", "UNCLEAR", "NOT_APPLICABLE"]);
 export type CriterionState = z.infer<typeof CriterionStateSchema>;
 
-export const CriterionResultSchema = z
+export const RequirementSupportStatusSchema = z.enum([
+  "SUPPORTED",
+  "NOT_SUPPORTED",
+  "CONTRADICTED",
+  "UNVERIFIABLE",
+  "NOT_APPLICABLE",
+]);
+export type RequirementSupportStatus = z.infer<typeof RequirementSupportStatusSchema>;
+
+export const CriterionSupportVerdictSchema = z.enum([
+  "FULLY_SUPPORTED",
+  "PARTIAL",
+  "NOT_SUPPORTED",
+  "NOT_APPLICABLE",
+]);
+export type CriterionSupportVerdict = z.infer<typeof CriterionSupportVerdictSchema>;
+
+export const RequirementResultSchema = z
   .object({
-    criterionId: z.string().min(1),
-    state: CriterionStateSchema,
-    evidenceLineNumbers: z.array(z.number().int().positive()).max(8),
+    requirementId: z.string().min(1),
+    status: RequirementSupportStatusSchema,
+    evidenceLineNumbers: z.array(z.number().int().positive()).max(6),
   })
   .strict();
+
+export const MaterialAssumptionSchema = z
+  .object({
+    requirementId: z.string().min(1),
+    assumption: z.string().min(1).max(300),
+  })
+  .strict();
+
+export const CriterionAssessmentSchema = z
+  .object({
+    criterionId: z.string().min(1),
+    requirementResults: z.array(RequirementResultSchema).min(1).max(12),
+    materialAssumptions: z.array(MaterialAssumptionSchema).max(8),
+  })
+  .strict();
+
+// Backward-compatible export name for code that treats one model item as a
+// criterion result. The model no longer chooses the final criterion state.
+export const CriterionResultSchema = CriterionAssessmentSchema;
 
 export const CallFactsSchema = z
   .object({
     coachSpeaker: z.string().min(1),
     clientSpeaker: z.string().min(1),
-    criteria: z.array(CriterionResultSchema).min(1).max(200),
+    criteria: z.array(CriterionAssessmentSchema).min(1).max(200),
   })
   .strict();
 export type CallFacts = z.infer<typeof CallFactsSchema>;

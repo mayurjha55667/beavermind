@@ -3,27 +3,42 @@ import type { CriterionDefinition } from "@/lib/rubrics/criteria";
 import type { CallType } from "@/schemas/evaluation";
 
 export const EVIDENCE_SYSTEM_PROMPT = `You classify atomic rubric criteria in a controlled call-quality pipeline.
-Do not score dimensions, choose bands, calculate totals, write report copy, or reproduce transcript quotations.
-Return every supplied criterionId exactly once and no unknown IDs.
+Do not score dimensions, choose bands, calculate totals, choose criterion verdicts, write report copy, or reproduce
+transcript quotations. Return every supplied criterionId and every supplied requirementId exactly once and no unknown IDs.
 
-For each criterion:
-- PRESENT means the complete transcript affirmatively proves the criterion. Include only canonical line numbers that directly prove it.
-- ABSENT means the complete transcript does not show it. Use an empty evidenceLineNumbers array.
-- UNCLEAR means the transcript is ambiguous. Use an empty evidenceLineNumbers array. UNCLEAR receives no scoring credit.
-- NOT_APPLICABLE may be used only when the supplied criterion definition explicitly permits it.
+Apply the strict-reviewer test to each requirement independently:
+Imagine a skeptical human reviewer sees only the requirement and the cited evidence bundle. Mark SUPPORTED only when
+those lines explicitly establish the complete requirement without material unstated context or charitable inference.
+Related topics, nearby keywords, general tone, and overall impressions are not evidence.
 
-A PRESENT result always needs at least one direct line. Return only the single strongest line unless maxEvidenceLines
-explicitly permits more. Generic, adjacent, redundant, or merely plausible wording is insufficient. Never return every
-related conversational line. Evidence line order is strength order, not chronology.
-Information learned after the client volunteers it does not prove pre-call preparation. A later booking line does not prove
-upfront agenda framing. Absence is never proven by citing an unrelated line. Return coachSpeaker and clientSpeaker exactly
-as they appear inside the transcript's square brackets.
+Requirement statuses:
+- SUPPORTED: the smallest complete cited evidence bundle establishes the full requirement. At least one line is required.
+- NOT_SUPPORTED: the complete transcript does not establish the requirement and does not directly establish its opposite.
+  Return no evidence lines.
+- CONTRADICTED: cited lines directly establish the opposite of the requirement. Direct evidence lines are required.
+- UNVERIFIABLE: related evidence exists, but a material fact such as source, timing, ownership, intent, or outcome cannot be
+  established from the transcript. Cite only the limiting lines, if any.
+- NOT_APPLICABLE: use only when the criterion explicitly permits it, and return no evidence lines.
 
-Return only the controlled state and canonical line-number evidence for each criterion. Do not add commentary.`;
+Material assumptions:
+- Report each material unstated assumption that would be necessary to upgrade a requirement to SUPPORTED.
+- A requirement that depends on a material assumption must be UNVERIFIABLE or NOT_SUPPORTED, never SUPPORTED.
+- Normal interpretation within a cited exchange, such as resolving a pronoun from the immediately preceding line, is not a
+  material assumption. Inventing an external source, prior knowledge, motivation, timing, ownership, or outcome is.
+
+Search for supporting, limiting, and contradictory evidence before assigning a status. Respect every supplied exclusion.
+Information learned after the client volunteers it does not prove pre-call preparation. Safety advice does not by itself
+normalize discomfort. An accountability preference does not by itself establish a learning style. A booked next call is not
+a post-call deliverable. An immediate deadline is not a multi-week journey.
+
+Use the smallest complete evidence bundle and never include adjacent filler or every related line. Do not exceed the
+criterion's maxEvidenceLines across all requirement results. Return coachSpeaker and clientSpeaker exactly as they appear
+inside the transcript's square brackets.
+
+Return only controlled requirement statuses, canonical line-number evidence, and material assumptions. Do not add commentary.`;
 
 export function buildEvidencePrompt(input: {
   callType: CallType;
-  rubric: string;
   criteria: readonly CriterionDefinition[];
   numberedTranscript: string;
   validationErrors?: unknown;
@@ -32,19 +47,20 @@ export function buildEvidencePrompt(input: {
     ? `\n<INTERNAL_VALIDATION_ERRORS_DO_NOT_COPY>\n${JSON.stringify(input.validationErrors)}\n</INTERNAL_VALIDATION_ERRORS_DO_NOT_COPY>\n`
     : "";
   return `CALL TYPE: ${input.callType}\n${retry}
-<COMPLETE_APPLICABLE_RUBRIC>
-${input.rubric}
-</COMPLETE_APPLICABLE_RUBRIC>
-
-<ATOMIC_CRITERION_CATALOG>
+<ATOMIC_REQUIREMENT_CATALOG>
 ${JSON.stringify(input.criteria.map((criterion) => ({
   criterionId: criterion.id,
   dimensionId: criterion.dimensionId,
   description: criterion.description,
+  requirements: criterion.requirements.map((requirement) => ({
+    requirementId: requirement.id,
+    description: requirement.description,
+  })),
+  excludedInterpretations: criterion.excludedInterpretations,
   notApplicablePermitted: Boolean(criterion.allowNotApplicable),
   maxEvidenceLines: criterion.maxEvidenceLines,
 })))}
-</ATOMIC_CRITERION_CATALOG>
+</ATOMIC_REQUIREMENT_CATALOG>
 
 <COMPLETE_NUMBERED_TRANSCRIPT>
 ${input.numberedTranscript}
@@ -69,6 +85,7 @@ export function buildSynthesisPrompt(input: {
     dimensions: input.evidence.dimensions.map((dimension) => ({
       dimensionId: dimension.dimensionId,
       positiveEvidence: dimension.positiveEvidence,
+      negativeEvidence: dimension.negativeEvidence,
     })),
   };
   return `CALL TYPE: ${input.callType}

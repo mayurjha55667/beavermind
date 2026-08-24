@@ -17,6 +17,7 @@ import type {
   CallFacts,
   CallType,
   CriterionState,
+  RequirementSupportStatus,
   ReportNarrative,
   ScoringResult,
   StageName,
@@ -127,11 +128,44 @@ export function makeFacts(overrides: FactsOverrides = {}): CallFacts {
           : Math.max(1, definition.dimensionId);
       return {
         criterionId: definition.id,
-        state,
-        evidenceLineNumbers: state === "PRESENT" ? [lineNumber] : [],
+        requirementResults: definition.requirements.map((requirement) => ({
+          requirementId: requirement.id,
+          status: requirementStatusForState(state),
+          evidenceLineNumbers: state === "PRESENT" ? [lineNumber] : [],
+        })),
+        materialAssumptions: [],
       };
     }),
   };
+}
+
+export function setCriterionState(
+  facts: CallFacts,
+  criterionId: string,
+  state: CriterionState,
+  ...lineNumbers: number[]
+): void {
+  const result = facts.criteria.find((criterion) => criterion.criterionId === criterionId);
+  if (!result) throw new Error(`Unknown test criterion ${criterionId}.`);
+  result.requirementResults = result.requirementResults.map((requirement) => ({
+    ...requirement,
+    status: requirementStatusForState(state),
+    evidenceLineNumbers: state === "PRESENT" ? lineNumbers : [],
+  }));
+  result.materialAssumptions = [];
+}
+
+function requirementStatusForState(state: CriterionState): RequirementSupportStatus {
+  switch (state) {
+    case "PRESENT":
+      return "SUPPORTED";
+    case "ABSENT":
+      return "NOT_SUPPORTED";
+    case "UNCLEAR":
+      return "UNVERIFIABLE";
+    case "NOT_APPLICABLE":
+      return "NOT_APPLICABLE";
+  }
 }
 
 export function makeScoring(

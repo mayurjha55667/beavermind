@@ -16,7 +16,6 @@ import {
   buildEvidencePrompt,
   buildSynthesisPrompt,
 } from "@/lib/llm/prompts";
-import { getCompleteRubricText } from "@/lib/rubrics/source";
 import { getCriterionCatalog } from "@/lib/rubrics/criteria";
 import {
   PROMPT_VERSION,
@@ -50,7 +49,6 @@ export async function runEvidenceStage(
   const evaluation = await requireEvaluation(evaluationId, dependencies.repository);
   await dependencies.repository.markStage(evaluationId, "extracting_evidence");
   const transcript = parseTranscript(evaluation.originalTranscript);
-  const rubric = getCompleteRubricText(evaluation.callType);
   let validationErrors: unknown;
   let durationMs = 0;
   const usage = emptyUsage();
@@ -64,7 +62,6 @@ export async function runEvidenceStage(
         system: EVIDENCE_SYSTEM_PROMPT,
         prompt: buildEvidencePrompt({
           callType: evaluation.callType,
-          rubric,
           criteria: getCriterionCatalog(evaluation.callType),
           numberedTranscript: transcript.numberedTranscript,
           validationErrors,

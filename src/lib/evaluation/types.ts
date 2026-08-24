@@ -1,9 +1,11 @@
 import type {
   CallType,
   CriterionState,
+  CriterionSupportVerdict,
   DimensionBand,
   EvaluationStatus,
   Grade,
+  RequirementSupportStatus,
   ReportNarrative,
   ScoringResult,
   StageName,
@@ -42,8 +44,23 @@ export interface VerifiedCriterionEvidence {
   criterionId: string;
   dimensionId: number;
   state: CriterionState;
+  supportVerdict: CriterionSupportVerdict;
   evidenceLineNumbers: number[];
   transcriptLines: TranscriptTurn[];
+  requirementResults: VerifiedRequirementEvidence[];
+  materialAssumptions: MaterialAssumption[];
+}
+
+export interface VerifiedRequirementEvidence {
+  requirementId: string;
+  status: RequirementSupportStatus;
+  evidenceLineNumbers: number[];
+  transcriptLines: TranscriptTurn[];
+}
+
+export interface MaterialAssumption {
+  requirementId: string;
+  assumption: string;
 }
 
 export interface VerifiedEvidenceLedger {

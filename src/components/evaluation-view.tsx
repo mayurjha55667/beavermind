@@ -278,7 +278,7 @@ function CompletedReport({ evaluation }: { evaluation: PublicEvaluation }) {
                   <div className="quick-fix">
                     <span>Quick fix</span>
                     <p>{dimension.quickFix}</p>
-                    <small>Potential final-score lift: +{formatScore(dimension.improvementPotential)}</small>
+                    <small>Maximum lift if all dimension gaps are fixed: +{formatScore(dimension.improvementPotential)}</small>
                   </div>
                 </div>
               </div>

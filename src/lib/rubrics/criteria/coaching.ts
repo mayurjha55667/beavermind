@@ -25,7 +25,16 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d02.review_present", 2, "A diagnostics or movement review occurs.", "Conduct a focused diagnostics review when applicable."),
 
   c("coaching.d03.current_block_target", 3, "The coach clearly explains what the current block is targeting.", "Explain what the current program block is targeting."),
-  c("coaching.d03.explicit_twelve_month_vision", 3, "The current block is explicitly connected to the client's named 12-month vision.", "Connect the current block to the client's named 12-month vision."),
+  c("coaching.d03.explicit_twelve_month_vision", 3, "The current block is explicitly connected to the client's named 12-month vision.", "Connect the current block to the client's named 12-month vision.", false, 3, {
+    requirements: [
+      { id: "named_twelve_month_vision", description: "A specific 12-month client vision is explicitly stated." },
+      { id: "current_block_connected", description: "The coach explicitly connects the current program block to that named vision." },
+    ],
+    excludedInterpretations: [
+      "A generic reference to long-term health.",
+      "Mentioning the current block and a distant goal without explicitly connecting them.",
+    ],
+  }),
   c("coaching.d03.method_difference", 3, "The coach explains that the program is built from diagnostics and goals rather than random workouts.", "Explain how this program differs from random workouts."),
   c("coaching.d03.client_belief_or_insight", 3, "The client responds with belief, understanding, or insight.", "Check that the client understands and believes in the reason for this block."),
   c("coaching.d03.specific_why_now", 3, "The coach explains why this block is the right step at this point in the journey.", "Explain why this block is the right step right now."),
@@ -51,12 +60,29 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d05.protective_strategy_framing", 5, "The adjustment is framed as intelligent protection rather than backing off.", "Frame the adjustment as a strategic way to protect progress."),
   c("coaching.d05.training_constraints_addressed", 5, "Relevant training constraints are addressed.", "Address the relevant training constraints."),
   c("coaching.d05.lifestyle_constraints_addressed", 5, "Relevant lifestyle constraints are addressed.", "Address the relevant lifestyle constraints."),
-  c("coaching.d05.client_confident", 5, "The client leaves the adjustment feeling confident rather than discouraged.", "Check that the client understands and feels confident about the adjustment."),
+  c("coaching.d05.client_confident", 5, "The client leaves the adjustment feeling confident rather than discouraged.", "Check that the client understands and feels confident about the adjustment.", false, 3, {
+    requirements: [
+      { id: "client_confidence_evidenced", description: "The client's own words or an unambiguous response establish confidence about the adjustment." },
+    ],
+    excludedInterpretations: [
+      "The coach says the plan should work without the client expressing confidence.",
+      "The client merely acknowledges hearing the adjustment.",
+    ],
+  }),
   c("coaching.d05.unexplained_adjustment", 5, "An adjustment is made without a clear rationale.", null),
 
   c("coaching.d06.coach_specific_commitment", 6, "The coach states a specific commitment.", "State a specific coach commitment."),
   c("coaching.d06.coach_deadline", 6, "The coach attaches a deadline to their commitment.", "Attach a deadline to the coach commitment."),
-  c("coaching.d06.client_specific_commitment", 6, "The client owns a specific, measurable commitment.", "Create a specific, measurable client commitment."),
+  c("coaching.d06.client_specific_commitment", 6, "The client owns a specific, measurable commitment.", "Create a specific, measurable client commitment.", false, 3, {
+    requirements: [
+      { id: "client_ownership", description: "The client explicitly owns or agrees to perform the action." },
+      { id: "specific_and_measurable", description: "The action is specific enough that completion can be verified." },
+    ],
+    excludedInterpretations: [
+      "A coach suggestion that the client never accepts.",
+      "Generic encouragement to try, improve, or stay consistent.",
+    ],
+  }),
   c("coaching.d06.client_deadline", 6, "The client commitment has a deadline.", "Attach a deadline to the client commitment."),
   c("coaching.d06.weekly_theme_in_client_words", 6, "The client states the weekly theme in their own words.", "Ask the client to state the weekly theme in their own words."),
   c("coaching.d06.micro_commitment_when_slipping", 6, "A micro-commitment is created when the client is slipping.", "Create a small immediate commitment when the client is slipping."),
@@ -65,7 +91,16 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
 
   c("coaching.d07.specific_deliverable", 7, "The client owns a specific, verifiable deliverable.", "Define one specific, verifiable accountability deliverable."),
   c("coaching.d07.client_confirms", 7, "The client verbally confirms ownership of the deliverable.", "Ask the client to confirm ownership of the accountability deliverable."),
-  c("coaching.d07.gated_to_coach_action", 7, "The deliverable is clearly gated to a coach action or progression decision.", "Explain what coach action or progression the deliverable unlocks."),
+  c("coaching.d07.gated_to_coach_action", 7, "The deliverable is clearly gated to a coach action or progression decision.", "Explain what coach action or progression the deliverable unlocks.", false, 3, {
+    requirements: [
+      { id: "client_deliverable", description: "A specific client-owned deliverable is identified." },
+      { id: "explicit_progression_gate", description: "The coach explicitly states which coach action or progression decision depends on that deliverable." },
+    ],
+    excludedInterpretations: [
+      "A standalone client task with no stated consequence or coach response.",
+      "A vague promise that the coach will look at it later.",
+    ],
+  }),
   c("coaching.d07.time_bound", 7, "The deliverable has a hard or session-relative deadline.", "Add a clear deadline or submission window."),
   c("coaching.d07.accountability_gesture", 7, "Accountability is mentioned but lacks a clear consequence or progression gate.", null),
 
@@ -76,7 +111,15 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d08.reconnects_to_why", 8, "The coach reconnects the client to their why.", "Reconnect the struggle to the client's why."),
   c("coaching.d08.reframes_and_offers_options", 8, "The coach reframes the struggle and offers useful options.", "Reframe the struggle and offer clear options."),
   c("coaching.d08.full_circle_close", 8, "The coach closes the struggle section by checking what else is needed.", "Close the loop by checking what the client needs from the coach."),
-  c("coaching.d08.client_more_capable", 8, "The client leaves the struggle section more capable and reconnected.", "Confirm that the client leaves with greater confidence and capability."),
+  c("coaching.d08.client_more_capable", 8, "The client leaves the struggle section more capable and reconnected.", "Confirm that the client leaves with greater confidence and capability.", false, 3, {
+    requirements: [
+      { id: "client_outcome_evidenced", description: "The client's own response explicitly demonstrates increased capability, clarity, or reconnection after the struggle discussion." },
+    ],
+    excludedInterpretations: [
+      "The coach offers a solution but the client's resulting state is not established.",
+      "A polite acknowledgment such as okay or thanks by itself.",
+    ],
+  }),
   c("coaching.d08.struggle_ignored", 8, "The struggle is ignored, minimized, avoided, or met defensively.", null),
 
   c("coaching.d09.specific_progress_celebrated", 9, "The coach celebrates a specific named progress from this call.", "Celebrate one specific piece of progress from this call."),
@@ -85,14 +128,33 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d09.positive_generic_close", 9, "The close is positive but generic or mostly logistical.", null),
 
   c("coaching.d10.booking_link_shared_live", 10, "The booking link is shared during the call.", "Share the booking link live during the call."),
-  c("coaching.d10.client_books_live", 10, "The client books the next call during the current call.", "Have the client book the next call before ending."),
+  c("coaching.d10.client_books_live", 10, "The client books the next call during the current call.", "Have the client book the next call before ending.", false, 3, {
+    requirements: [
+      { id: "booking_completed_during_call", description: "The transcript explicitly establishes that the client completed the booking before the current call ended." },
+    ],
+    excludedInterpretations: [
+      "The coach merely shares a link.",
+      "The client promises to book after the call.",
+      "A date is discussed without completion of the booking being established.",
+    ],
+  }),
   c("coaching.d10.specific_date_confirmed", 10, "The next-call date is confirmed verbally.", "Confirm the booked date verbally."),
   c("coaching.d10.specific_time_confirmed", 10, "The next-call time is confirmed verbally.", "Confirm the booked time verbally."),
   c("coaching.d10.before_close", 10, "Booking is completed before the close.", "Complete booking before the closing section."),
 
   c("coaching.d11.anchor_restated", 11, "The accountability anchor is explicitly restated.", "Restate the accountability anchor before closing."),
   c("coaching.d11.coach_follow_up_specific_timing", 11, "The coach states their follow-up with specific timing.", "State exactly when the coach will follow up."),
-  c("coaching.d11.cause_effect_chain", 11, "The client action and coach response form a clear cause-and-effect chain.", "Explain the chain: client action by a deadline, then coach response by a deadline."),
+  c("coaching.d11.cause_effect_chain", 11, "The client action and coach response form a clear cause-and-effect chain.", "Explain the chain: client action by a deadline, then coach response by a deadline.", false, 4, {
+    requirements: [
+      { id: "client_action_and_timing", description: "A specific client action and its timing are established." },
+      { id: "coach_response_and_timing", description: "A specific coach response and its timing are established." },
+      { id: "dependency_explicit", description: "The transcript explicitly states that the coach response follows or depends on the client action." },
+    ],
+    excludedInterpretations: [
+      "Separate client and coach actions with no stated dependency.",
+      "A vague follow-up with no timing.",
+    ],
+  }),
   c("coaching.d11.client_understands_next", 11, "The client clearly understands what happens after the call.", "Check that the client understands exactly what happens next."),
   c("coaching.d11.vague_follow_up", 11, "Follow-up is mentioned but timing or the accountability chain remains vague.", null),
 

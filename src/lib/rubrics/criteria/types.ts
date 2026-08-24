@@ -1,5 +1,15 @@
 import type { CriterionState } from "@/schemas/evaluation";
 
+export interface CriterionRequirementDefinition {
+  id: string;
+  description: string;
+}
+
+export interface CriterionSemanticContract {
+  requirements?: readonly CriterionRequirementDefinition[];
+  excludedInterpretations?: readonly string[];
+}
+
 export interface CriterionDefinition {
   id: string;
   dimensionId: number;
@@ -7,6 +17,8 @@ export interface CriterionDefinition {
   missingBehaviour: string | null;
   allowNotApplicable?: boolean;
   maxEvidenceLines: number;
+  requirements: readonly CriterionRequirementDefinition[];
+  excludedInterpretations: readonly string[];
 }
 
 export interface CriterionView {
@@ -27,7 +39,20 @@ export function criterion(
   description: string,
   missingBehaviour: string | null,
   allowNotApplicable = false,
-  maxEvidenceLines = 1,
+  maxEvidenceLines = 3,
+  semanticContract: CriterionSemanticContract = {},
 ): CriterionDefinition {
-  return { id, dimensionId, description, missingBehaviour, allowNotApplicable, maxEvidenceLines };
+  const requirements = semanticContract.requirements ?? [
+    { id: "complete_requirement", description },
+  ];
+  return {
+    id,
+    dimensionId,
+    description,
+    missingBehaviour,
+    allowNotApplicable,
+    maxEvidenceLines,
+    requirements,
+    excludedInterpretations: semanticContract.excludedInterpretations ?? [],
+  };
 }

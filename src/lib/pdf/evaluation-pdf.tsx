@@ -154,16 +154,17 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
         </Page>
       ) : null}
 
-      <Page size="A4" style={styles.page}>
-        <PdfHeader evaluation={evaluation} label="Dimension scorecard" />
-        <Text style={styles.sectionLabel}>Full scorecard</Text>
-        <Text style={styles.heading}>Twelve dimensions</Text>
-        {evaluation.dimensions.map((dimension) => (
+      {evaluation.dimensions.map((dimension) => (
+        <Page size="A4" style={styles.page} key={dimension.dimensionId}>
+          <PdfHeader evaluation={evaluation} label="Dimension scorecard" fixed={false} />
+          {dimension.dimensionId === 1 ? (
+            <>
+              <Text style={styles.sectionLabel}>Full scorecard</Text>
+              <Text style={styles.heading}>Twelve dimensions</Text>
+            </>
+          ) : null}
           <View
             style={styles.dimension}
-            key={dimension.dimensionId}
-            minPresenceAhead={180}
-            wrap={false}
           >
             <View style={styles.dimensionHeader} wrap={false}>
               <Text style={styles.dimensionNumber}>D{String(dimension.dimensionId).padStart(2, "0")}</Text>
@@ -208,19 +209,27 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
             </View>
             <Text style={styles.quickFix} wrap={false} minPresenceAhead={55}>
               QUICK FIX{"\n"}{dimension.quickFix}{"\n"}
-              Potential final-score lift: +{formatScore(dimension.improvementPotential)}
+              Maximum lift if all dimension gaps are fixed: +{formatScore(dimension.improvementPotential)}
             </Text>
           </View>
-        ))}
-        <PdfFooter evaluation={evaluation} />
-      </Page>
+          <PdfFooter evaluation={evaluation} />
+        </Page>
+      ))}
     </Document>
   );
 }
 
-function PdfHeader({ evaluation, label }: { evaluation: CompletedEvaluation; label: string }) {
+function PdfHeader({
+  evaluation,
+  label,
+  fixed = true,
+}: {
+  evaluation: CompletedEvaluation;
+  label: string;
+  fixed?: boolean;
+}) {
   return (
-    <View style={styles.header} fixed>
+    <View style={styles.header} fixed={fixed}>
       <Text>Signal Review</Text>
       <Text>{label}</Text>
       <Text>{evaluation.id.slice(0, 8).toUpperCase()}</Text>

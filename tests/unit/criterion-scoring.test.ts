@@ -10,7 +10,7 @@ import {
 import { getRubricConfig } from "@/lib/rubrics/config";
 import { parseTranscript } from "@/lib/transcript/parser";
 import type { CallFacts, CallType, CriterionState } from "@/schemas/evaluation";
-import { fixture, makeFacts, SIMPLE_TRANSCRIPT } from "../helpers";
+import { fixture, makeFacts, setCriterionState, SIMPLE_TRANSCRIPT } from "../helpers";
 
 function emptyFacts(
   callType: CallType,
@@ -19,8 +19,7 @@ function emptyFacts(
 ): CallFacts {
   const facts = makeFacts({ callType, coachSpeaker, clientSpeaker });
   for (const result of facts.criteria) {
-    result.state = "ABSENT";
-    result.evidenceLineNumbers = [];
+    setCriterionState(facts, result.criterionId, "ABSENT");
   }
   return facts;
 }
@@ -31,10 +30,7 @@ function setState(
   state: CriterionState,
   ...lineNumbers: number[]
 ): void {
-  const result = facts.criteria.find((criterion) => criterion.criterionId === criterionId);
-  if (!result) throw new Error(`Unknown test criterion ${criterionId}.`);
-  result.state = state;
-  result.evidenceLineNumbers = state === "PRESENT" ? lineNumbers : [];
+  setCriterionState(facts, criterionId, state, ...lineNumbers);
 }
 
 function present(facts: CallFacts, criterionId: string, ...lineNumbers: number[]): void {
@@ -80,7 +76,7 @@ describe("deterministic atomic criterion scoring", () => {
 
     present(facts, "kickoff.d08.behavioral_patterns", 7);
     present(facts, "kickoff.d08.consistency_triggers", 33);
-    present(facts, "kickoff.d08.uses_answers_to_personalize", 35);
+    present(facts, "kickoff.d08.uses_answers_to_personalize", 52, 53);
 
     present(facts, "kickoff.d09.clear_next_steps", 45);
     present(facts, "kickoff.d09.specific_timeline", 45);
@@ -114,6 +110,17 @@ describe("deterministic atomic criterion scoring", () => {
         "Ask for and receive explicit client agreement to the agenda.",
       ]),
     );
+    expect(result.dimensions[5]).toMatchObject({
+      score: 3,
+      quickFix: "Next improvement: Explain the broader timeline and key milestones.",
+    });
+    expect(result.dimensions[7]?.evidence.map((line) => line.lineNumber)).toEqual(
+      expect.arrayContaining([52, 53]),
+    );
+    expect(result.dimensions[10]).toMatchObject({
+      score: 3,
+      quickFix: "Next improvement: Give a short, structured recap of what was covered.",
+    });
     expect(JSON.stringify(result)).not.toMatch(/expectedQuote|prior extraction|validation error/i);
   });
 
