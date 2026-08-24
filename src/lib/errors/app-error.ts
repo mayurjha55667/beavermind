@@ -21,9 +21,9 @@ const PUBLIC_MESSAGES: Record<ErrorCode, string> = {
   EVIDENCE_VALIDATION_FAILED:
     "We could not verify the extracted evidence against the transcript after a retry.",
   SCORING_VALIDATION_FAILED:
-    "The scoring response did not satisfy the rubric's deterministic rules.",
+    "The calculated scores did not satisfy the rubric's deterministic rules.",
   NARRATIVE_VALIDATION_FAILED:
-    "The report narrative referenced evidence that could not be verified.",
+    "The report narrative could not be validated against the verified result.",
   PROVIDER_TIMEOUT: "The evaluation provider timed out. The run can be retried safely.",
   PROVIDER_FAILURE: "The evaluation provider was unavailable after bounded retries.",
   DATABASE_FAILURE: "The evaluation could not be persisted safely.",

@@ -30,7 +30,7 @@ export default function Home() {
               <span>01</span>
               <div>
                 <strong>Evidence first</strong>
-                <p>Every quote is checked against canonical transcript lines.</p>
+                <p>Every evidence excerpt is reconstructed from canonical transcript lines.</p>
               </div>
             </li>
             <li>

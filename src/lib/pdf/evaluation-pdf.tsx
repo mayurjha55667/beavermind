@@ -1,5 +1,6 @@
 import {
   Document,
+  Font,
   Page,
   StyleSheet,
   Text,
@@ -7,6 +8,8 @@ import {
 } from "@react-pdf/renderer";
 import type { ComponentProps, ReactElement } from "react";
 import type { CompletedEvaluation } from "@/lib/evaluation/types";
+
+Font.registerHyphenationCallback((word) => [word]);
 
 const navy = "#152D2B";
 const cream = "#F7F2E8";
@@ -64,7 +67,7 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
   const oneThing = evaluation.oneThing;
 
   return (
-    <Document title={`Signal Review — ${evaluation.callType} call`} author="Signal Review">
+    <Document title={`Signal Review - ${evaluation.callType} call`} author="Signal Review">
       <Page size="A4" style={styles.cover}>
         <Text style={styles.brand}>Signal Review · BeaverMind exercise</Text>
         <View style={styles.coverRule} />
@@ -91,7 +94,7 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
             <Text style={styles.oneThingTitle}>{oneThing.headline}</Text>
             <Text style={styles.body}>{oneThing.explanation}</Text>
             <Text style={styles.scoreDelta}>
-              {formatScore(oneThing.currentFinalTotal)} → {formatScore(oneThing.counterfactualFinalTotal)} (+{formatScore(oneThing.improvement)})
+              {formatScore(oneThing.currentFinalTotal)} to {formatScore(oneThing.counterfactualFinalTotal)} (+{formatScore(oneThing.improvement)})
             </Text>
           </View>
           <View style={styles.heroCard}>
@@ -116,31 +119,53 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
           </View>
         ) : null}
 
-        <View style={{ marginTop: 22 }}>
-          <Text style={styles.sectionLabel}>Red flags</Text>
-          {evaluation.redFlags.length === 0 ? (
+        {evaluation.redFlags.length === 0 ? (
+          <View style={{ marginTop: 22 }} wrap={false}>
+            <Text style={styles.sectionLabel}>Red flags</Text>
             <Text style={styles.body}>No material retention red flags were supported by verified evidence.</Text>
-          ) : evaluation.redFlags.map((flag, index) => (
-            <View style={styles.redFlag} key={`${flag.title}-${index}`}>
+          </View>
+        ) : null}
+        <PdfFooter evaluation={evaluation} />
+      </Page>
+
+      {evaluation.redFlags.length > 0 ? (
+        <Page size="A4" style={styles.page}>
+          <PdfHeader evaluation={evaluation} label="Risk review" />
+          <Text style={styles.sectionLabel}>Red flags</Text>
+          <Text style={styles.heading}>Evidence-backed risks</Text>
+          {evaluation.redFlags.map((flag, index) => (
+            <View
+              style={styles.redFlag}
+              key={`${flag.title}-${index}`}
+              wrap={false}
+              minPresenceAhead={90}
+            >
               <Text style={styles.severity}>{flag.severity} risk</Text>
               <Text style={styles.redFlagTitle}>{flag.title}</Text>
               <Text style={styles.body}>{flag.explanation}</Text>
               <Text style={{ ...styles.evidenceLine, color: muted, marginTop: 4 }}>
-                Evidence: {flag.evidenceLineNumbers.map((lineNumber) => `L${lineNumber}`).join(", ")}
+                {flag.evidenceLineNumbers.length > 0
+                  ? `Evidence: ${flag.evidenceLineNumbers.map((lineNumber) => `L${lineNumber}`).join(", ")}`
+                  : "Evidence: This risk is based on the absence of required rubric evidence."}
               </Text>
             </View>
           ))}
-        </View>
-        <PdfFooter evaluation={evaluation} />
-      </Page>
+          <PdfFooter evaluation={evaluation} />
+        </Page>
+      ) : null}
 
       <Page size="A4" style={styles.page}>
         <PdfHeader evaluation={evaluation} label="Dimension scorecard" />
         <Text style={styles.sectionLabel}>Full scorecard</Text>
         <Text style={styles.heading}>Twelve dimensions</Text>
         {evaluation.dimensions.map((dimension) => (
-          <View style={styles.dimension} key={dimension.dimensionId}>
-            <View style={styles.dimensionHeader}>
+          <View
+            style={styles.dimension}
+            key={dimension.dimensionId}
+            minPresenceAhead={180}
+            wrap={false}
+          >
+            <View style={styles.dimensionHeader} wrap={false}>
               <Text style={styles.dimensionNumber}>D{String(dimension.dimensionId).padStart(2, "0")}</Text>
               <Text style={styles.dimensionName}>{dimension.name}</Text>
               <Text style={styles.dimensionScore}>
@@ -153,29 +178,35 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
                 Effective redistributed weight: {formatScore(dimension.effectiveMaxScore)}
               </Text>
             ) : null}
-            <Text style={styles.subheading}>Why this score</Text>
-            <Text style={styles.body}>{dimension.reasoning}</Text>
-            <Text style={styles.subheading}>Verified evidence</Text>
-            {dimension.evidence.length === 0 ? (
-              <Text style={styles.body}>No supporting transcript evidence was verified.</Text>
-            ) : (
-              <View style={styles.evidence}>
-                {dimension.evidence.map((evidence) => (
-                  <Text style={styles.evidenceLine} key={evidence.lineNumber}>
-                    <Text style={styles.evidenceNumber}>L{evidence.lineNumber} </Text>
-                    <Text style={styles.evidenceSpeaker}>{evidence.speaker}: </Text>
-                    {evidence.text}
-                  </Text>
-                ))}
-              </View>
-            )}
-            <Text style={styles.subheading}>Missing behaviours</Text>
-            {dimension.missingBehaviours.length === 0 ? (
-              <Text style={styles.body}>No rubric behaviour was explicitly missing.</Text>
-            ) : dimension.missingBehaviours.map((item) => (
-              <Text style={styles.listItem} key={item}>• {item}</Text>
-            ))}
-            <Text style={styles.quickFix}>
+            <View minPresenceAhead={65}>
+              <Text style={styles.subheading}>Why this score</Text>
+              <Text style={styles.body}>{dimension.reasoning}</Text>
+            </View>
+            <View minPresenceAhead={90}>
+              <Text style={styles.subheading}>Verified evidence</Text>
+              {dimension.evidence.length === 0 ? (
+                <Text style={styles.body}>No supporting transcript evidence was verified.</Text>
+              ) : (
+                <View style={styles.evidence}>
+                  {dimension.evidence.map((evidence) => (
+                    <Text style={styles.evidenceLine} key={evidence.lineNumber}>
+                      <Text style={styles.evidenceNumber}>L{evidence.lineNumber} </Text>
+                      <Text style={styles.evidenceSpeaker}>{evidence.speaker}: </Text>
+                      {evidence.text}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+            <View minPresenceAhead={70}>
+              <Text style={styles.subheading}>Missing behaviours</Text>
+              {dimension.missingBehaviours.length === 0 ? (
+                <Text style={styles.body}>No rubric behaviour was explicitly missing.</Text>
+              ) : dimension.missingBehaviours.map((item) => (
+                <Text style={styles.listItem} key={item}>• {item}</Text>
+              ))}
+            </View>
+            <Text style={styles.quickFix} wrap={false} minPresenceAhead={55}>
               QUICK FIX{"\n"}{dimension.quickFix}{"\n"}
               Potential final-score lift: +{formatScore(dimension.improvementPotential)}
             </Text>
@@ -207,6 +238,6 @@ function PdfFooter({ evaluation }: { evaluation: CompletedEvaluation }) {
 }
 
 function formatScore(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return "N/A";
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }

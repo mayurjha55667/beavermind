@@ -31,30 +31,14 @@ export type DimensionBand = z.infer<typeof DimensionBandSchema>;
 export const GradeSchema = z.enum(["ELITE", "STRONG", "INCONSISTENT", "AT RISK", "FAIL"]);
 export type Grade = z.infer<typeof GradeSchema>;
 
-export const EvidenceReferenceSchema = z
-  .object({
-    lineNumbers: z.array(z.number().int().positive()).length(1),
-    quote: z.string().min(1),
-    interpretation: z.string().min(1),
-  })
-  .strict();
+export const CriterionStateSchema = z.enum(["PRESENT", "ABSENT", "UNCLEAR", "NOT_APPLICABLE"]);
+export type CriterionState = z.infer<typeof CriterionStateSchema>;
 
-export const DimensionEvidenceSchema = z
+export const CriterionResultSchema = z
   .object({
-    dimensionId: z.number().int().min(1).max(12),
-    positiveEvidence: z.array(EvidenceReferenceSchema),
-    negativeEvidence: z.array(EvidenceReferenceSchema),
-    missingBehaviours: z.array(z.string().min(1)),
-    evidenceSufficient: z.boolean(),
-  })
-  .strict();
-
-export const MovementSignalsSchema = z
-  .object({
-    clientPerformedLiveMovement: z.boolean(),
-    coachGaveResponsiveCues: z.boolean(),
-    recordedMovementReviewedLive: z.boolean(),
-    realTimeFormCorrection: z.boolean(),
+    criterionId: z.string().min(1),
+    state: CriterionStateSchema,
+    evidenceLineNumbers: z.array(z.number().int().positive()).max(8),
   })
   .strict();
 
@@ -62,25 +46,7 @@ export const CallFactsSchema = z
   .object({
     coachSpeaker: z.string().min(1),
     clientSpeaker: z.string().min(1),
-    coachSpeakingPercentage: z.number().min(0).max(100),
-    coachDominatedWithoutEngagement: z.boolean(),
-    nextCallBookedLive: z.boolean(),
-    unresolvedConfusion: z.boolean(),
-    strugglePresent: z.boolean(),
-    struggleHandled: z.boolean().nullable(),
-    movementCoachingPresent: z.boolean(),
-    movementSignals: MovementSignalsSchema,
-    diagnosticsApplicable: z.boolean(),
-    adjustmentNeeded: z.boolean(),
-    noFollowUpQuestions: z.boolean(),
-    noActionStepsForEitherParty: z.boolean(),
-    noNorthStarOrLongTermVision: z.boolean(),
-    concreteAccountabilityOwned: z.boolean(),
-    structuredRecapPresent: z.boolean(),
-    coachCommitments: z.array(z.string().min(1)),
-    clientCommitments: z.array(z.string().min(1)),
-    accountabilityDeadlines: z.array(z.string().min(1)),
-    dimensions: z.array(DimensionEvidenceSchema).length(12),
+    criteria: z.array(CriterionResultSchema).min(1).max(200),
   })
   .strict();
 export type CallFacts = z.infer<typeof CallFactsSchema>;
@@ -117,53 +83,25 @@ export const ScoringResultSchema = z
   .strict();
 export type ScoringResult = z.infer<typeof ScoringResultSchema>;
 
-export const RubricBandCheckSchema = z
-  .object({
-    band: z.enum(["ELITE", "STRONG", "MID", "SURFACE", "WEAK", "FAIL"]),
-    requirementsSatisfied: z.boolean(),
-    evidenceLineNumbers: z.array(z.number().int().positive()),
-    explanation: z.string().min(1),
-  })
-  .strict();
-
-export const RubricAuditDimensionSchema = z
-  .object({
-    dimensionId: z.number().int().min(1).max(12),
-    score: z.number().nullable(),
-    band: DimensionBandSchema,
-    reasoning: z.string().min(1),
-    evidenceLineNumbers: z.array(z.number().int().positive()),
-    quickFix: z.string().min(1),
-    bandChecks: z.array(RubricBandCheckSchema),
-  })
-  .strict();
-
-export const RubricAuditResultSchema = z
-  .object({
-    dimensions: z.array(RubricAuditDimensionSchema).length(12),
-  })
-  .strict();
-export type RubricAuditResult = z.infer<typeof RubricAuditResultSchema>;
-
 export const ReportNarrativeSchema = z
   .object({
     oneThing: z
       .object({
-        headline: z.string().min(1),
-        explanation: z.string().min(1),
+        headline: z.string().min(1).max(180),
+        explanation: z.string().min(1).max(900),
       })
       .strict(),
-    brief: z.string().min(1),
+    brief: z.string().min(1).max(1_200),
     redFlags: z.array(
       z
         .object({
-          title: z.string().min(1),
-          explanation: z.string().min(1),
-          evidenceLineNumbers: z.array(z.number().int().positive()),
+          title: z.string().min(1).max(180),
+          explanation: z.string().min(1).max(700),
+          evidenceLineNumbers: z.array(z.number().int().positive()).max(6),
           severity: z.enum(["low", "medium", "high"]),
         })
         .strict(),
-    ),
+    ).max(3),
   })
   .strict();
 export type ReportNarrative = z.infer<typeof ReportNarrativeSchema>;

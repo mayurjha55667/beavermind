@@ -1,7 +1,7 @@
 import { AppError, safeDiagnostic, toAppError } from "@/lib/errors/app-error";
 import { verifyEvidenceLedger } from "@/lib/evaluation/evidence";
 import { validateAndCalculate } from "@/lib/evaluation/calculations";
-import { validateRubricAudit } from "@/lib/evaluation/rubric-audit";
+import { scoreVerifiedCriteria } from "@/lib/evaluation/criterion-scoring";
 import type {
   AuthoritativeEvaluation,
   EvaluationRepository,
@@ -12,15 +12,12 @@ import type {
 } from "@/lib/evaluation/types";
 import {
   EVIDENCE_SYSTEM_PROMPT,
-  RUBRIC_AUDIT_SYSTEM_PROMPT,
-  SCORING_SYSTEM_PROMPT,
   SYNTHESIS_SYSTEM_PROMPT,
   buildEvidencePrompt,
-  buildRubricAuditPrompt,
-  buildScoringPrompt,
   buildSynthesisPrompt,
 } from "@/lib/llm/prompts";
 import { getCompleteRubricText } from "@/lib/rubrics/source";
+import { getCriterionCatalog } from "@/lib/rubrics/criteria";
 import {
   PROMPT_VERSION,
   STAGE_SCHEMA_VERSION,
@@ -30,8 +27,6 @@ import { parseTranscript } from "@/lib/transcript/parser";
 import {
   CallFactsSchema,
   ReportNarrativeSchema,
-  RubricAuditResultSchema,
-  ScoringResultSchema,
   type ReportNarrative,
   type ScoringResult,
 } from "@/schemas/evaluation";
@@ -70,6 +65,7 @@ export async function runEvidenceStage(
         prompt: buildEvidencePrompt({
           callType: evaluation.callType,
           rubric,
+          criteria: getCriterionCatalog(evaluation.callType),
           numberedTranscript: transcript.numberedTranscript,
           validationErrors,
         }),
@@ -77,7 +73,7 @@ export async function runEvidenceStage(
       });
       durationMs += response.durationMs;
       mergeUsage(usage, response.usage);
-      const verified = verifyEvidenceLedger(response.data, transcript);
+      const verified = verifyEvidenceLedger(evaluation.callType, response.data, transcript);
       const envelope: StageEnvelope<VerifiedEvidenceLedger> = {
         data: verified,
         metadata: providerMetadata(dependencies.provider, attempt, durationMs, usage),
@@ -109,7 +105,7 @@ export async function runEvidenceStage(
 
 export async function runScoringStage(
   evaluationId: string,
-  dependencies: StageDependencies,
+  dependencies: Pick<StageDependencies, "repository">,
 ): Promise<StageEnvelope<ScoringResult>> {
   const existing = await dependencies.repository.getStageResult<ScoringResult>(
     evaluationId,
@@ -125,81 +121,9 @@ export async function runScoringStage(
     "evidence",
   );
   await dependencies.repository.markStage(evaluationId, "scoring");
-  await dependencies.repository.incrementAttempt(evaluationId);
-  const transcript = parseTranscript(evaluation.originalTranscript);
-  const rubricConfig = getRubricConfig(evaluation.callType);
-  const response = await dependencies.provider.generateStructured({
-    schema: ScoringResultSchema,
-    schemaName: "rubric_scoring",
-    system: SCORING_SYSTEM_PROMPT,
-    prompt: buildScoringPrompt({
-      callType: evaluation.callType,
-      rubric: getCompleteRubricText(evaluation.callType),
-      numberedTranscript: transcript.numberedTranscript,
-      evidence: evidence.data,
-      capCatalog: rubricConfig.caps.map((cap) => ({
-        capId: cap.id,
-        label: cap.label,
-        type: cap.type,
-        limit: cap.limit,
-        dimensionId: cap.dimensionId,
-      })),
-    }),
-    idempotencyKey: `${evaluationId}:scoring`,
-  });
-  const usage = { ...response.usage };
-  let durationMs = response.durationMs;
-  let validationErrors: unknown;
-  let auditedScoring: ScoringResult | undefined;
-  let auditAttempts = 0;
-
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
-    auditAttempts = attempt;
-    await dependencies.repository.incrementAttempt(evaluationId);
-    try {
-      const auditResponse = await dependencies.provider.generateStructured({
-        schema: RubricAuditResultSchema,
-        schemaName: "rubric_audit",
-        system: RUBRIC_AUDIT_SYSTEM_PROMPT,
-        prompt: buildRubricAuditPrompt({
-          callType: evaluation.callType,
-          rubric: getCompleteRubricText(evaluation.callType),
-          numberedTranscript: transcript.numberedTranscript,
-          evidence: evidence.data,
-          scoring: response.data,
-          bandCatalog: rubricConfig.dimensions.map((dimension) => ({
-            dimensionId: dimension.id,
-            name: dimension.name,
-            maxScore: dimension.maxScore,
-            bands: dimension.buckets.map((bucket) => ({
-              band: bucket.band,
-              allowedScores: bucket.scores,
-            })),
-          })),
-          validationErrors,
-        }),
-        idempotencyKey: `${evaluationId}:rubric-audit:${attempt}`,
-      });
-      durationMs += auditResponse.durationMs;
-      mergeUsage(usage, auditResponse.usage);
-      auditedScoring = validateRubricAudit({
-        callType: evaluation.callType,
-        audit: auditResponse.data,
-        scoring: response.data,
-        evidence: evidence.data,
-      });
-      break;
-    } catch (error) {
-      const appError = toAppError(error);
-      validationErrors = appError.details ?? { code: appError.code };
-      if (attempt === 2) throw appError;
-    }
-  }
-
-  if (!auditedScoring) throw new AppError("SCORING_VALIDATION_FAILED");
+  const deterministicScoring = scoreVerifiedCriteria(evaluation.callType, evidence.data);
   const envelope: StageEnvelope<ScoringResult> = {
-    data: auditedScoring,
-    metadata: providerMetadata(dependencies.provider, 1 + auditAttempts, durationMs, usage),
+    data: deterministicScoring,
   };
   await dependencies.repository.saveStageResult({
     evaluationId,
@@ -286,6 +210,7 @@ export async function runSynthesisStage(
     idempotencyKey: `${evaluationId}:synthesis`,
   });
   validateNarrativeEvidence(response.data, evidence.data);
+  validateNarrativeSafety(response.data);
   const envelope: StageEnvelope<ReportNarrative> = {
     data: response.data,
     metadata: providerMetadata(dependencies.provider, 1, response.durationMs, response.usage),
@@ -307,7 +232,7 @@ export async function runCompleteEvaluation(
 ): Promise<void> {
   try {
     await runEvidenceStage(evaluationId, dependencies);
-    await runScoringStage(evaluationId, dependencies);
+    await runScoringStage(evaluationId, { repository: dependencies.repository });
     await runValidationStage(evaluationId, dependencies.repository);
     await runSynthesisStage(evaluationId, dependencies);
   } catch (error) {
@@ -359,6 +284,30 @@ function validateNarrativeEvidence(
   if (invalid.length > 0) {
     throw new AppError("NARRATIVE_VALIDATION_FAILED", {
       details: { invalidLineNumbers: [...new Set(invalid)] },
+    });
+  }
+}
+
+function validateNarrativeSafety(narrative: ReportNarrative): void {
+  const clientFacingText = [
+    narrative.oneThing.headline,
+    narrative.oneThing.explanation,
+    narrative.brief,
+    ...narrative.redFlags.flatMap((flag) => [flag.title, flag.explanation]),
+  ].join("\n");
+  const forbidden = [
+    /expectedquote/iu,
+    /prior extraction/iu,
+    /validation error/iu,
+    /schema/iu,
+    /retry/iu,
+    /system prompt/iu,
+    /internal error/iu,
+  ];
+  const matched = forbidden.find((pattern) => pattern.test(clientFacingText));
+  if (matched) {
+    throw new AppError("NARRATIVE_VALIDATION_FAILED", {
+      details: { message: "Client-facing narrative contains internal pipeline language." },
     });
   }
 }

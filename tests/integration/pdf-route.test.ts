@@ -6,8 +6,6 @@ import {
   QueueProvider,
   makeFacts,
   makeNarrative,
-  makeRubricAudit,
-  makeScoring,
 } from "../helpers";
 
 afterEach(() => {
@@ -18,11 +16,16 @@ afterEach(() => {
 describe("completed PDF route", () => {
   it("returns a persistent PDF generated from completed report data", async () => {
     const repository = new InMemoryRepository();
+    const narrative = makeNarrative();
+    narrative.redFlags = [{
+      title: "A required rubric behavior is missing",
+      explanation: "This absence-based risk should explain why no evidence line is listed.",
+      evidenceLineNumbers: [],
+      severity: "medium",
+    }];
     const provider = new QueueProvider({
       call_facts: [makeFacts()],
-      rubric_scoring: [makeScoring("kickoff")],
-      rubric_audit: [makeRubricAudit("kickoff")],
-      report_narrative: [makeNarrative()],
+      report_narrative: [narrative],
     });
     await runCompleteEvaluation(repository.evaluation.id, { repository, provider });
     const completed = await repository.getCompletedEvaluation(repository.evaluation.id);

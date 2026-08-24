@@ -1,6 +1,6 @@
 import type {
-  CallFacts,
   CallType,
+  CriterionState,
   DimensionBand,
   EvaluationStatus,
   Grade,
@@ -26,7 +26,6 @@ export interface ParsedTranscript {
 
 export interface VerifiedEvidenceReference {
   lineNumbers: number[];
-  quote: string;
   interpretation: string;
   transcriptLines: TranscriptTurn[];
 }
@@ -39,7 +38,41 @@ export interface VerifiedDimensionEvidence {
   evidenceSufficient: boolean;
 }
 
-export interface VerifiedEvidenceLedger extends Omit<CallFacts, "dimensions"> {
+export interface VerifiedCriterionEvidence {
+  criterionId: string;
+  dimensionId: number;
+  state: CriterionState;
+  evidenceLineNumbers: number[];
+  transcriptLines: TranscriptTurn[];
+}
+
+export interface VerifiedEvidenceLedger {
+  coachSpeaker: string;
+  clientSpeaker: string;
+  coachSpeakingPercentage: number;
+  coachDominatedWithoutEngagement: boolean;
+  nextCallBookedLive: boolean;
+  unresolvedConfusion: boolean;
+  strugglePresent: boolean;
+  struggleHandled: boolean | null;
+  movementCoachingPresent: boolean;
+  movementSignals: {
+    clientPerformedLiveMovement: boolean;
+    coachGaveResponsiveCues: boolean;
+    recordedMovementReviewedLive: boolean;
+    realTimeFormCorrection: boolean;
+  };
+  diagnosticsApplicable: boolean;
+  adjustmentNeeded: boolean;
+  noFollowUpQuestions: boolean;
+  noActionStepsForEitherParty: boolean;
+  noNorthStarOrLongTermVision: boolean;
+  concreteAccountabilityOwned: boolean;
+  structuredRecapPresent: boolean;
+  coachCommitments: string[];
+  clientCommitments: string[];
+  accountabilityDeadlines: string[];
+  criteria: VerifiedCriterionEvidence[];
   dimensions: VerifiedDimensionEvidence[];
 }
 

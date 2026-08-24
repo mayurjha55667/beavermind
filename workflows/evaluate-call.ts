@@ -20,7 +20,7 @@ export async function evaluateCallWorkflow(evaluationId: string): Promise<{ eval
 
   try {
     await extractEvidenceStep(evaluationId);
-    await scoreRubricStep(evaluationId);
+    await calculateRubricStep(evaluationId);
     await validateCalculationStep(evaluationId);
     await synthesizeReportStep(evaluationId);
   } catch (error) {
@@ -41,12 +41,11 @@ async function extractEvidenceStep(evaluationId: string): Promise<void> {
   );
 }
 
-async function scoreRubricStep(evaluationId: string): Promise<void> {
+async function calculateRubricStep(evaluationId: string): Promise<void> {
   "use step";
   await executeStage(evaluationId, "scoring", () =>
     runScoringStage(evaluationId, {
       repository: new SupabaseEvaluationRepository(),
-      provider: getLLMProvider(),
     }),
   );
 }
@@ -128,19 +127,14 @@ function safeWorkflowDiagnostic(error: AppError): Record<string, unknown> {
         const issue = detail as Record<string, unknown>;
         return [
           {
+            criterionId:
+              typeof issue.criterionId === "string" ? issue.criterionId : undefined,
             dimensionId:
               typeof issue.dimensionId === "number" ? issue.dimensionId : undefined,
-            evidenceType:
-              issue.evidenceType === "positive" || issue.evidenceType === "negative"
-                ? issue.evidenceType
-                : undefined,
-            evidenceIndex:
-              typeof issue.evidenceIndex === "number" ? issue.evidenceIndex : undefined,
             message: typeof issue.message === "string" ? issue.message : "Validation failed.",
             lineNumbers: Array.isArray(issue.lineNumbers)
               ? issue.lineNumbers.filter((line): line is number => typeof line === "number")
               : undefined,
-            hasExpectedQuote: typeof issue.expectedQuote === "string",
           },
         ];
       }),
@@ -166,9 +160,12 @@ function safeWorkflowDiagnostic(error: AppError): Record<string, unknown> {
         safeDetails[key] = value;
       }
     }
-    for (const key of ["allowedScores", "invalid"]) {
+    for (const key of ["allowedScores", "invalid", "missing", "unknown", "duplicates"]) {
       const value = source[key];
-      if (Array.isArray(value) && value.every((item) => typeof item === "number")) {
+      if (
+        Array.isArray(value) &&
+        value.every((item) => typeof item === "number" || typeof item === "string")
+      ) {
         safeDetails[key] = value;
       }
     }
@@ -179,6 +176,6 @@ function safeWorkflowDiagnostic(error: AppError): Record<string, unknown> {
 }
 
 (extractEvidenceStep as typeof extractEvidenceStep & { maxRetries: number }).maxRetries = 2;
-(scoreRubricStep as typeof scoreRubricStep & { maxRetries: number }).maxRetries = 2;
+(calculateRubricStep as typeof calculateRubricStep & { maxRetries: number }).maxRetries = 2;
 (validateCalculationStep as typeof validateCalculationStep & { maxRetries: number }).maxRetries = 2;
 (synthesizeReportStep as typeof synthesizeReportStep & { maxRetries: number }).maxRetries = 2;

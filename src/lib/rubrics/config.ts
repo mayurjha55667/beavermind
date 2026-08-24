@@ -1,7 +1,8 @@
-import type { CallFacts, CallType, DimensionBand, Grade } from "@/schemas/evaluation";
+import type { VerifiedEvidenceLedger } from "@/lib/evaluation/types";
+import type { CallType, DimensionBand, Grade } from "@/schemas/evaluation";
 
-export const PROMPT_VERSION = "evaluation-v1.1.0";
-export const STAGE_SCHEMA_VERSION = "v3";
+export const PROMPT_VERSION = "evaluation-v1.3.0";
+export const STAGE_SCHEMA_VERSION = "v5";
 
 export interface BandBucket {
   band: Exclude<DimensionBand, "N/A">;
@@ -24,7 +25,7 @@ export interface CapDefinition {
   limit: number;
   dimensionId: number | null;
   resolvedByDimensionIds: readonly number[];
-  applies: (facts: CallFacts) => boolean;
+  applies: (facts: VerifiedEvidenceLedger) => boolean;
 }
 
 export interface RubricConfig {

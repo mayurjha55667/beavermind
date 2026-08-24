@@ -9,16 +9,12 @@ import {
   QueueProvider,
   makeFacts,
   makeNarrative,
-  makeRubricAudit,
-  makeScoring,
   providerFailure,
 } from "../helpers";
 
 function successfulProvider() {
   return new QueueProvider({
     call_facts: [makeFacts()],
-    rubric_scoring: [makeScoring("kickoff")],
-    rubric_audit: [makeRubricAudit("kickoff")],
     report_narrative: [makeNarrative()],
   });
 }
@@ -33,20 +29,13 @@ describe("four-stage evaluation integration", () => {
     expect(repository.dimensions).toHaveLength(12);
     expect(repository.dimensions.every((dimension) => dimension.evidence.length > 0)).toBe(true);
     expect(repository.dimensions.every((dimension) => dimension.missingBehaviours.length === 0)).toBe(true);
-    expect(provider.calls).toEqual([
-      "call_facts",
-      "rubric_scoring",
-      "rubric_audit",
-      "report_narrative",
-    ]);
+    expect(provider.calls).toEqual(["call_facts", "report_narrative"]);
   });
 
   it("retries invalid structured evidence output once and then succeeds", async () => {
     const repository = new InMemoryRepository();
     const provider = new QueueProvider({
       call_facts: [{ invalid: true }, makeFacts()],
-      rubric_scoring: [makeScoring("kickoff")],
-      rubric_audit: [makeRubricAudit("kickoff")],
       report_narrative: [makeNarrative()],
     });
     await runCompleteEvaluation(repository.evaluation.id, { repository, provider });
@@ -54,32 +43,14 @@ describe("four-stage evaluation integration", () => {
     expect(provider.calls.filter((name) => name === "call_facts")).toHaveLength(2);
   });
 
-  it("retries a rubric audit that approves a band without satisfying its requirements", async () => {
+  it("fails safely after an invalid line reference also fails the correction retry", async () => {
     const repository = new InMemoryRepository();
-    const invalidAudit = makeRubricAudit("kickoff");
-    invalidAudit.dimensions[0]!.bandChecks.find((check) => check.band === "ELITE")!
-      .requirementsSatisfied = false;
-    const provider = new QueueProvider({
-      call_facts: [makeFacts()],
-      rubric_scoring: [makeScoring("kickoff")],
-      rubric_audit: [invalidAudit, makeRubricAudit("kickoff")],
-      report_narrative: [makeNarrative()],
-    });
-
-    await runCompleteEvaluation(repository.evaluation.id, { repository, provider });
-
-    expect(provider.calls.filter((name) => name === "rubric_audit")).toHaveLength(2);
-    expect(repository.evaluation.status).toBe("completed");
-  });
-
-  it("fails safely after a fabricated quote also fails the correction retry", async () => {
-    const repository = new InMemoryRepository();
-    const fabricated = () => {
+    const invalid = () => {
       const facts = makeFacts();
-      facts.dimensions[0]!.positiveEvidence[0]!.quote = "This was never said.";
+      facts.criteria[0]!.evidenceLineNumbers = [999];
       return facts;
     };
-    const provider = new QueueProvider({ call_facts: [fabricated(), fabricated()] });
+    const provider = new QueueProvider({ call_facts: [invalid(), invalid()] });
     await expect(
       runCompleteEvaluation(repository.evaluation.id, { repository, provider }),
     ).rejects.toMatchObject({ code: "EVIDENCE_VALIDATION_FAILED" });
@@ -111,26 +82,37 @@ describe("four-stage evaluation integration", () => {
     expect(provider.calls).toEqual(["call_facts"]);
   });
 
-  it("rejects unsupported positive credit when no verified evidence exists", async () => {
+  it("rejects PRESENT criterion credit when no verified line exists", async () => {
     const repository = new InMemoryRepository();
-    const facts = makeFacts({
-      dimensions: makeFacts().dimensions.map((dimension) => ({
-        ...dimension,
-        positiveEvidence: [],
-        negativeEvidence: [],
-        evidenceSufficient: false,
-      })),
-    });
-    const scoring = makeScoring("kickoff");
-    scoring.dimensions.forEach((dimension) => { dimension.evidenceLineNumbers = []; });
+    const invalid = () => {
+      const facts = makeFacts();
+      facts.criteria[0]!.evidenceLineNumbers = [];
+      return facts;
+    };
     const provider = new QueueProvider({
-      call_facts: [facts],
-      rubric_scoring: [scoring],
-      rubric_audit: [makeRubricAudit("kickoff"), makeRubricAudit("kickoff")],
+      call_facts: [invalid(), invalid()],
     });
     await expect(
       runCompleteEvaluation(repository.evaluation.id, { repository, provider }),
-    ).rejects.toMatchObject({ code: "SCORING_VALIDATION_FAILED" });
+    ).rejects.toMatchObject({ code: "EVIDENCE_VALIDATION_FAILED" });
     expect(repository.evaluation.status).toBe("failed");
+  });
+
+  it("blocks internal extraction diagnostics from client-facing narrative", async () => {
+    const repository = new InMemoryRepository();
+    const narrative = makeNarrative();
+    narrative.brief = "The prior extraction used the wrong expectedQuote.";
+    const provider = new QueueProvider({
+      call_facts: [makeFacts()],
+      report_narrative: [narrative],
+    });
+
+    await expect(
+      runCompleteEvaluation(repository.evaluation.id, { repository, provider }),
+    ).rejects.toMatchObject({ code: "NARRATIVE_VALIDATION_FAILED" });
+    expect(repository.evaluation).toMatchObject({
+      status: "failed",
+      errorCode: "NARRATIVE_VALIDATION_FAILED",
+    });
   });
 });

@@ -82,7 +82,7 @@ export function validateAndCalculate(input: {
         disabledReason: disabledReason(definition.id),
         reasoning: proposed.reasoning,
         quickFix: proposed.quickFix,
-        missingBehaviours: evidenceDimension.missingBehaviours,
+        missingBehaviours: proposed.missingBehaviours,
         evidence: [],
         improvementPotential: 0,
       };
@@ -137,7 +137,11 @@ export function validateAndCalculate(input: {
         text: turn.text,
       }),
     );
-    if (proposed.score > 0 && evidenceLines.length === 0) {
+    const evidenceFreeRubricDefault =
+      input.callType === "coaching" &&
+      ((definition.id === 5 && !input.evidence.adjustmentNeeded) ||
+        (definition.id === 8 && !input.evidence.strugglePresent));
+    if (proposed.score > 0 && evidenceLines.length === 0 && !evidenceFreeRubricDefault) {
       throw new AppError("SCORING_VALIDATION_FAILED", {
         details: {
           dimensionId: definition.id,
@@ -166,7 +170,7 @@ export function validateAndCalculate(input: {
       disabledReason: null,
       reasoning: proposed.reasoning,
       quickFix: proposed.quickFix,
-      missingBehaviours: evidenceDimension.missingBehaviours,
+      missingBehaviours: proposed.missingBehaviours,
       evidence: evidenceLines,
       improvementPotential: 0,
     };
@@ -248,7 +252,7 @@ function calculateEffectiveMaxScores(
   // The published coaching rows add to 105 although the rubric declares 100 (85 without D4).
   // Until the client resolves that source inconsistency, D5 retains its 0/3/7/10 rubric bucket
   // but carries five effective points. This preserves every explicit total and the full ten-point
-  // D2 redistribution without silently changing any model-selected bucket.
+  // D2 redistribution without silently changing any rubric bucket.
   result.set(5, 5);
 
   const diagnosticsDisabled = !evidence.diagnosticsApplicable;

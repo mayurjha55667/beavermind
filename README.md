@@ -16,10 +16,10 @@ flowchart LR
     A -->|parse and number turns| T[(Supabase evaluations)]
     A -->|start evaluation UUID| W[Vercel Workflow]
     A -->|202 + persistent URL| O
-    W --> E[1. Evidence extraction]
-    E --> V[Exact quote verifier]
-    V --> S[2. Rubric bucket selection]
-    S --> D[3. Deterministic validation]
+    W --> E[1. Atomic criterion classification]
+    E --> V[Criterion and line verifier]
+    V --> S[2. 24 deterministic scoring functions]
+    S --> D[3. Caps and calculation validation]
     D --> C[Caps, totals, grade, counterfactual]
     C --> N[4. Narrative synthesis]
     N --> T
@@ -35,27 +35,27 @@ The deployment is a single Next.js application. Vercel Workflow supplies durable
 
 `src/lib/transcript/parser.ts` normalizes harmless whitespace, preserves the original input, requires `[Speaker]: text`, and creates stable one-based canonical turns. The entire numbered transcript and entire applicable source rubric are sent in one request; the transcript is not arbitrarily chunked because evidence for a dimension can occur at distant points in a call.
 
-The model identifies speakers, facts, commitments, missing behaviours, gating conditions, and evidence for all 12 dimensions. `src/lib/evaluation/evidence.ts` then checks that:
+The model identifies the coach/client speakers and classifies the complete controlled criterion catalog. For each criterion it may return only `criterionId`, `PRESENT | ABSENT | UNCLEAR | NOT_APPLICABLE`, and canonical evidence line numbers. It does not write quotes, dimension scores, bands, reasoning, gaps, caps, totals, or report copy. `src/lib/evaluation/evidence.ts` then checks that:
 
-- every referenced line exists;
-- multi-line references are unique, ascending, and contiguous;
-- every quote is an exact substring of the canonical referenced turn(s);
-- dimensions 1–12 occur exactly once;
+- every applicable catalog ID occurs exactly once, with no unknown IDs;
+- every `PRESENT` criterion cites at least one unique line that exists;
+- non-present criteria claim no supporting lines;
+- `NOT_APPLICABLE` is accepted only where the source rubric explicitly permits it;
 - identified coach and client speakers exist.
 
-Displayed evidence is reconstructed from canonical stored turns. Model-authored quotations are never treated as authoritative. An invalid ledger receives one correction attempt with the specific validation errors; a second failure stops the run safely.
+Application code reconstructs displayed evidence verbatim from the stored transcript turns. There is no model-authored quotation to validate or publish. An invalid classification receives one correction attempt with controlled validation errors; a second failure stops the run safely.
 
-### 2. Rubric bucket selection
+### 2. Deterministic rubric scoring
 
-The scoring request receives the complete rubric, complete numbered transcript, and verified ledger. It may select only a rubric value, write reasoning, list missing behaviours and a quick fix, and propose caps. It never returns an authoritative total or grade.
+This stage has no model call. `src/lib/rubrics/criteria/` contains the controlled kickoff/coaching catalogs and twelve explicit scoring functions for each call type. The functions map verified criterion states to allowed rubric values. `UNCLEAR` never earns credit, and optional coaching dimensions are disabled only under their rubric-defined conditions.
 
-All structured responses use OpenAI Responses API JSON-schema Structured Outputs and are parsed locally by strict Zod schemas. The provider is behind the `LLMProvider` interface in `src/lib/evaluation/types.ts`; `src/lib/llm/openai-provider.ts` is the first implementation and is the model-failover extension point.
+Missing behaviours and quick fixes come only from the controlled criterion catalog. They are never free-text model output. Deterministic reasoning names the verified criteria and the exact bucket selected.
 
 ### 3. Deterministic verification and calculation
 
-This stage has no model call. `src/lib/rubrics/config.ts` contains dimension identity, rubric maxima, allowed values, bucket-to-band mappings, caps, grade thresholds, retention-risk tie breakers, and cap-to-dimension counterfactual mappings.
+`src/lib/rubrics/config.ts` contains dimension identity, rubric maxima, allowed values, bucket-to-band mappings, caps, grade thresholds, retention-risk tie breakers, and cap-to-dimension counterfactual mappings.
 
-`src/lib/evaluation/calculations.ts` rejects duplicate/missing dimensions, invalid scores, maximum or band mismatches, unsupported N/A states, evidence outside the ledger, unsupported cap proposals, and positive credit without a verified evidence line. It deterministically applies:
+`src/lib/evaluation/calculations.ts` rejects duplicate/missing dimensions, invalid scores, maximum or band mismatches, unsupported N/A states, and evidence outside the verified criteria. It deterministically applies:
 
 - kick-off ranges and half steps;
 - coaching discrete buckets;
@@ -71,6 +71,8 @@ For “the one thing,” every active dimension is independently simulated at fu
 ### 4. Report synthesis
 
 Only after the authoritative numbers are persisted does the model write a coach-facing brief, explain the predetermined one thing, and identify evidence-linked client/retention risks. It cannot alter numbers. Red-flag line references must exist in the verified evidence ledger before the narrative is published.
+
+The narrative schema has bounded lengths/counts, and a final safety check blocks internal extraction, validation, retry, or schema wording from client-facing output. These evidence-classification and narrative calls are the only two model calls in a successful evaluation. Both use OpenAI Responses API Structured Outputs parsed by strict Zod schemas behind the replaceable `LLMProvider` interface.
 
 The web report and PDF read the same persisted report rows. PDF generation makes no LLM call.
 
@@ -104,7 +106,7 @@ src/
 workflows/evaluate-call.ts     # Durable orchestration and retry policy
 supabase/migrations/           # Tables, indexes, RLS, helper function
 tests/
-  fixtures/                    # All four supplied transcripts
+  fixtures/                    # Supplied transcripts + locked failure regression
   unit/                        # Parser, evidence, rubric, calculation invariants
   integration/                 # Mocked pipeline, retries, idempotency, PDF route
 ```
@@ -178,7 +180,7 @@ npm run test:coverage
 npm run build
 ```
 
-All four supplied transcripts are copied into `tests/fixtures`. Tests assert structural/rubric invariants rather than subjective golden totals.
+All four supplied transcripts are copied into `tests/fixtures`, alongside the exact transcript that exposed the original scoring bug. Tests exhaust every binary path through all 24 scoring functions and lock that regression to the approved dimension scores and 52.5/100 total.
 
 ## API examples
 
@@ -241,7 +243,7 @@ curl -o report.pdf http://localhost:3000/api/evaluations/<uuid>/pdf
 
 1. **D2 N/A redistribution:** D3 and D4 retain their original discrete scores. With active D4, five maximum-weight points go to each proportionally; with disabled D4, all ten go to D3. Totals remain 100 or 85.
 2. **Coaching source arithmetic:** the published coaching dimension maxima add to 105 although the same rubric explicitly declares 100, and 85 with D4 disabled. To honor the declared totals and preserve the full ten-point D2 redistribution, D5 keeps its displayed/scored `0/3/7/10` bucket but carries five effective points. This is visible in report data and is a required client clarification; it is not hidden.
-3. **Speaking share:** calculated deterministically from non-whitespace transcript characters by identified speaker. The qualitative “without engagement/passive” portion remains an evidence-grounded model fact.
+3. **Speaking share:** calculated deterministically from non-whitespace transcript characters by identified speaker. The qualitative engagement condition is a controlled atomic criterion, not free-form model reasoning.
 4. **No chunking:** the full transcript and rubric must fit the chosen model context. Inputs above 100,000 characters are rejected instead of silently truncated.
 5. **Polling:** controlled polling is used instead of Supabase Realtime to avoid exposing a browser Supabase key. It pauses after 15 minutes while durable work continues; refresh always obtains current state.
 6. **PDF storage:** PDFs are rendered on demand from durable report rows and can be cached. A storage bucket is unnecessary at this exercise volume.
@@ -260,16 +262,16 @@ curl -o report.pdf http://localhost:3000/api/evaluations/<uuid>/pdf
 
 ## Known compromises and future improvements
 
-Within exercise scope, this build uses polling, on-demand PDFs, one provider, and UUID bearer links. Natural next steps are provider failover, durable rate limiting, operational re-drive tooling for failed runs, telemetry dashboards using IDs/stages only, report-link revocation, a signed PDF cache in Supabase Storage, prompt/rubric admin versioning, and manually approved golden-score regression sets.
+Within exercise scope, this build uses polling, on-demand PDFs, one provider, and UUID bearer links. Natural next steps are provider failover, durable rate limiting, operational re-drive tooling for failed runs, telemetry dashboards using IDs/stages only, report-link revocation, a signed PDF cache in Supabase Storage, prompt/rubric admin versioning, and a broader reviewer-approved golden-score corpus.
 
 ## Suggested Loom walkthrough
 
 1. Submit one strong and one weak supplied transcript; copy the UUID and close the tab during processing.
 2. Show the Workflow timeline and Supabase stage rows to demonstrate durability/idempotency.
-3. Open evidence verification code and intentionally explain why quotes are reconstructed.
-4. Open rubric config/calculations and demonstrate a cap, D4 disable, D2 redistribution, and “one thing” simulation.
+3. Open the atomic criterion schema and show that it contains no model quote, score, reasoning, or missing-behaviour fields.
+4. Open the 24 scoring functions and deterministic calculations; demonstrate a cap, D4 disable, D2 redistribution, and “one thing” simulation.
 5. Reopen the report URL, inspect a dimension, and download the PDF.
-6. Run the tests and show the fabricated-quote/provider-failure cases.
+6. Run the tests and show the exact 52.5 regression, exhaustive scoring branches, internal-language guard, and provider-failure case.
 7. Close with the 105-vs-100 coaching ambiguity, the D2 assumption, security boundaries, and what you would build next.
 
 ## Authoritative sources

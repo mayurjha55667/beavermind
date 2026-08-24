@@ -2,22 +2,23 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/errors/app-error";
 import { verifyEvidenceLedger } from "@/lib/evaluation/evidence";
 import { parseTranscript } from "@/lib/transcript/parser";
-import { EvidenceReferenceSchema } from "@/schemas/evaluation";
+import { CriterionResultSchema } from "@/schemas/evaluation";
 import { makeFacts, SIMPLE_TRANSCRIPT } from "../helpers";
 
-describe("exact evidence verification", () => {
-  it("constrains each model evidence reference to one transcript line", () => {
-    const result = EvidenceReferenceSchema.safeParse({
-      lineNumbers: [1, 3],
-      quote: "Combined evidence",
-      interpretation: "Two separate moments",
+describe("atomic criterion evidence verification", () => {
+  it("rejects model-generated quote text from the atomic schema", () => {
+    const result = CriterionResultSchema.safeParse({
+      criterionId: "kickoff.d03.agenda_mentioned",
+      state: "PRESENT",
+      evidenceLineNumbers: [3],
+      quote: "The model must not reproduce transcript text.",
     });
     expect(result.success).toBe(false);
   });
 
-  it("reconstructs verified lines from canonical transcript turns", () => {
+  it("reconstructs exact evidence from canonical transcript turns", () => {
     const transcript = parseTranscript(SIMPLE_TRANSCRIPT);
-    const verified = verifyEvidenceLedger(makeFacts(), transcript);
+    const verified = verifyEvidenceLedger("kickoff", makeFacts(), transcript);
     expect(verified.dimensions[0]?.positiveEvidence[0]?.transcriptLines[0]).toMatchObject({
       lineNumber: 1,
       speaker: "Coach",
@@ -26,39 +27,56 @@ describe("exact evidence verification", () => {
     expect(verified.coachSpeakingPercentage).toBeGreaterThan(0);
   });
 
-  it("rejects a paraphrased or fabricated quote", () => {
+  it("rejects PRESENT criteria without supporting lines", () => {
     const facts = makeFacts();
-    facts.dimensions[0]!.positiveEvidence[0]!.quote = "A quote that never happened.";
-    let thrown: unknown;
-    try {
-      verifyEvidenceLedger(facts, parseTranscript(SIMPLE_TRANSCRIPT));
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({
-      code: "EVIDENCE_VALIDATION_FAILED",
-      details: [
-        expect.objectContaining({
-          dimensionId: 1,
-          lineNumbers: [1],
-          expectedQuote: "Evidence for dimension 1.",
-        }),
-      ],
-    });
+    facts.criteria[0]!.evidenceLineNumbers = [];
+    expect(() => verifyEvidenceLedger("kickoff", facts, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
   });
 
-  it("accepts an exact quote copied with its displayed line number and speaker", () => {
+  it("rejects ABSENT criteria that claim supporting lines", () => {
     const facts = makeFacts();
-    facts.dimensions[0]!.positiveEvidence[0]!.quote =
-      "L1 [Coach]: Evidence for dimension 1.";
-    expect(() => verifyEvidenceLedger(facts, parseTranscript(SIMPLE_TRANSCRIPT))).not.toThrow();
+    facts.criteria[0]!.state = "ABSENT";
+    expect(() => verifyEvidenceLedger("kickoff", facts, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
   });
 
-  it("rejects non-contiguous multi-line evidence", () => {
+  it("rejects redundant evidence lines when a criterion permits only the strongest moment", () => {
     const facts = makeFacts();
-    facts.dimensions[0]!.positiveEvidence[0]!.lineNumbers = [1, 3];
-    expect(() => verifyEvidenceLedger(facts, parseTranscript(SIMPLE_TRANSCRIPT))).toThrowError(
-      AppError,
-    );
+    facts.criteria[0]!.evidenceLineNumbers = [1, 3];
+    expect(() => verifyEvidenceLedger("kickoff", facts, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
+  });
+
+  it("rejects reused or contradictory post-call commitment classifications", () => {
+    const facts = makeFacts();
+    const first = facts.criteria.find((criterion) => criterion.criterionId === "kickoff.d12.first_specific_commitment")!;
+    const second = facts.criteria.find((criterion) => criterion.criterionId === "kickoff.d12.second_distinct_commitment")!;
+    const mostly = facts.criteria.find((criterion) => criterion.criterionId === "kickoff.d12.mostly_precise_timing")!;
+    second.evidenceLineNumbers = [...first.evidenceLineNumbers];
+    mostly.state = "PRESENT";
+    mostly.evidenceLineNumbers = [12];
+
+    expect(() => verifyEvidenceLedger("kickoff", facts, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
+  });
+
+  it("rejects an incomplete criterion catalog", () => {
+    const facts = makeFacts();
+    facts.criteria.pop();
+    expect(() => verifyEvidenceLedger("kickoff", facts, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
+  });
+
+  it("allows NOT_APPLICABLE only for explicitly optional rubric criteria", () => {
+    const kickoff = makeFacts();
+    kickoff.criteria[0]!.state = "NOT_APPLICABLE";
+    kickoff.criteria[0]!.evidenceLineNumbers = [];
+    expect(() => verifyEvidenceLedger("kickoff", kickoff, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .toThrowError(AppError);
+
+    const coaching = makeFacts({ callType: "coaching", diagnosticsApplicable: false });
+    expect(() => verifyEvidenceLedger("coaching", coaching, parseTranscript(SIMPLE_TRANSCRIPT)))
+      .not.toThrow();
   });
 });

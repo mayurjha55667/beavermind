@@ -16,11 +16,12 @@ import { parseTranscript } from "@/lib/transcript/parser";
 import type {
   CallFacts,
   CallType,
+  CriterionState,
   ReportNarrative,
-  RubricAuditResult,
   ScoringResult,
   StageName,
 } from "@/schemas/evaluation";
+import { getCriterionCatalog } from "@/lib/rubrics/criteria";
 
 export const SIMPLE_TRANSCRIPT = Array.from({ length: 12 }, (_, index) => {
   const speaker = index % 2 === 0 ? "Coach" : "Client";
@@ -31,47 +32,105 @@ export function fixture(name: string): string {
   return readFileSync(path.join(process.cwd(), "tests", "fixtures", name), "utf8");
 }
 
-export function makeFacts(overrides: Partial<CallFacts> = {}): CallFacts {
+interface FactsOverrides {
+  callType?: CallType;
+  coachSpeaker?: string;
+  clientSpeaker?: string;
+  states?: Record<string, CriterionState>;
+  noFollowUpQuestions?: boolean;
+  movementCoachingPresent?: boolean;
+  diagnosticsApplicable?: boolean;
+  adjustmentNeeded?: boolean;
+  strugglePresent?: boolean;
+  nextCallBookedLive?: boolean;
+  noNorthStarOrLongTermVision?: boolean;
+  structuredRecapPresent?: boolean;
+  concreteAccountabilityOwned?: boolean;
+  noActionStepsForEitherParty?: boolean;
+}
+
+const NEGATIVE_CRITERION_PARTS = [
+  "global.unresolved_confusion",
+  "redundant_discovery_reset",
+  "friendly_but_transactional",
+  "fragmented_mention_only",
+  "generic_phase_reference",
+  "generic_questions_only",
+  "partial_instructions",
+  "booking_reference_only",
+  "vague_follow_up_only",
+  "mostly_precise_timing",
+  "generic_check_in",
+  "generic_intention",
+  "generic_feedback",
+  "generic_long_term_connection",
+  "block_logistics_only",
+  "telling_only",
+  "unexplained_adjustment",
+  "clear_but_incomplete_commitments",
+  "vague_actions",
+  "accountability_gesture",
+  "struggle_ignored",
+  "positive_generic_close",
+  "vague_follow_up",
+  "uneven_pacing",
+  "core_sections_missing",
+] as const;
+
+export function makeFacts(overrides: FactsOverrides = {}): CallFacts {
+  const callType = overrides.callType ?? "kickoff";
+  const states: Record<string, CriterionState> = {};
+  for (const definition of getCriterionCatalog(callType)) {
+    states[definition.id] = NEGATIVE_CRITERION_PARTS.some((part) => definition.id.includes(part))
+      ? "ABSENT"
+      : "PRESENT";
+  }
+  Object.assign(states, overrides.states);
+
+  if (overrides.noFollowUpQuestions) states["kickoff.global.follow_up_question_present"] = "ABSENT";
+  if (overrides.movementCoachingPresent === false) {
+    for (const id of ["client_live_movement", "responsive_setup_breathing_control_cues", "recorded_movement_reviewed_live", "real_time_form_correction"]) {
+      states[`coaching.d04.${id}`] = "ABSENT";
+    }
+  }
+  if (overrides.diagnosticsApplicable === false) states["coaching.d02.diagnostics_applicable"] = "NOT_APPLICABLE";
+  if (overrides.adjustmentNeeded === false) states["coaching.d05.adjustment_needed"] = "ABSENT";
+  if (overrides.strugglePresent === false) states["coaching.d08.struggle_present"] = "ABSENT";
+  if (overrides.nextCallBookedLive === false) {
+    for (const id of callType === "kickoff"
+      ? ["kickoff.d10.specific_date", "kickoff.d10.specific_time", "kickoff.d10.client_confirms"]
+      : ["coaching.d10.client_books_live", "coaching.d10.specific_date_confirmed", "coaching.d10.specific_time_confirmed"]) {
+      states[id] = "ABSENT";
+    }
+  }
+  if (overrides.noNorthStarOrLongTermVision) {
+    states[callType === "kickoff" ? "kickoff.d04.north_star_constructed" : "coaching.d03.explicit_twelve_month_vision"] = "ABSENT";
+  }
+  if (overrides.structuredRecapPresent === false) states["kickoff.d11.structured_recap"] = "ABSENT";
+  if (overrides.concreteAccountabilityOwned === false) {
+    for (const id of ["specific_deliverable", "client_confirms", "gated_to_coach_action", "time_bound"]) states[`coaching.d07.${id}`] = "ABSENT";
+  }
+  if (overrides.noActionStepsForEitherParty) {
+    states["coaching.d06.coach_specific_commitment"] = "ABSENT";
+    states["coaching.d06.client_specific_commitment"] = "ABSENT";
+  }
+
   return {
-    coachSpeaker: "Coach",
-    clientSpeaker: "Client",
-    coachSpeakingPercentage: 50,
-    coachDominatedWithoutEngagement: false,
-    nextCallBookedLive: true,
-    unresolvedConfusion: false,
-    strugglePresent: true,
-    struggleHandled: true,
-    movementCoachingPresent: true,
-    movementSignals: {
-      clientPerformedLiveMovement: true,
-      coachGaveResponsiveCues: true,
-      recordedMovementReviewedLive: false,
-      realTimeFormCorrection: true,
-    },
-    diagnosticsApplicable: true,
-    adjustmentNeeded: true,
-    noFollowUpQuestions: false,
-    noActionStepsForEitherParty: false,
-    noNorthStarOrLongTermVision: false,
-    concreteAccountabilityOwned: true,
-    structuredRecapPresent: true,
-    coachCommitments: ["Coach will send feedback by Friday."],
-    clientCommitments: ["Client will upload a video by Thursday."],
-    accountabilityDeadlines: ["Thursday", "Friday"],
-    dimensions: Array.from({ length: 12 }, (_, index) => ({
-      dimensionId: index + 1,
-      positiveEvidence: [
-        {
-          lineNumbers: [index + 1],
-          quote: `Evidence for dimension ${index + 1}.`,
-          interpretation: "Direct fixture evidence.",
-        },
-      ],
-      negativeEvidence: [],
-      missingBehaviours: [],
-      evidenceSufficient: true,
-    })),
-    ...overrides,
+    coachSpeaker: overrides.coachSpeaker ?? "Coach",
+    clientSpeaker: overrides.clientSpeaker ?? "Client",
+    criteria: getCriterionCatalog(callType).map((definition) => {
+      const state = states[definition.id] ?? "ABSENT";
+      const lineNumber = definition.id === "kickoff.d12.first_specific_commitment"
+        ? 10
+        : definition.id === "kickoff.d12.second_distinct_commitment"
+          ? 11
+          : Math.max(1, definition.dimensionId);
+      return {
+        criterionId: definition.id,
+        state,
+        evidenceLineNumbers: state === "PRESENT" ? [lineNumber] : [],
+      };
+    }),
   };
 }
 
@@ -99,41 +158,6 @@ export function makeScoring(
       };
     }),
     proposedCaps: [],
-  };
-}
-
-export function makeRubricAudit(
-  callType: CallType,
-  scoreOverrides: Record<number, number | null> = {},
-): RubricAuditResult {
-  const scoring = makeScoring(callType, scoreOverrides);
-  const rubric = getRubricConfig(callType);
-  return {
-    dimensions: rubric.dimensions.map((definition) => {
-      const proposed = scoring.dimensions[definition.id - 1]!;
-      return {
-        dimensionId: definition.id,
-        score: proposed.score,
-        band: proposed.band,
-        reasoning: proposed.reasoning,
-        evidenceLineNumbers: proposed.evidenceLineNumbers,
-        quickFix: proposed.quickFix,
-        bandChecks:
-          proposed.score === null
-            ? []
-            : definition.buckets.map((bucket) => ({
-                band: bucket.band,
-                requirementsSatisfied: bucket.band === proposed.band,
-                evidenceLineNumbers: bucket.band === proposed.band && (proposed.score ?? 0) > 0
-                  ? proposed.evidenceLineNumbers
-                  : [],
-                explanation:
-                  bucket.band === proposed.band
-                    ? "The verified fixture evidence satisfies this band."
-                    : "The verified fixture evidence does not satisfy this band.",
-              })),
-      };
-    }),
   };
 }
 

@@ -13,7 +13,8 @@ function calculate(
   } = {},
 ) {
   const transcript = parseTranscript(options.transcript ?? SIMPLE_TRANSCRIPT);
-  const evidence = verifyEvidenceLedger(options.facts ?? makeFacts(), transcript);
+  const facts = options.facts ?? makeFacts({ callType });
+  const evidence = verifyEvidenceLedger(callType, facts, transcript);
   return validateAndCalculate({
     callType,
     evidence,
@@ -73,13 +74,8 @@ describe("deterministic calculations", () => {
 
   it("disables D4 only when all movement signals are absent and normalizes from 85", () => {
     const facts = makeFacts({
+      callType: "coaching",
       movementCoachingPresent: false,
-      movementSignals: {
-        clientPerformedLiveMovement: false,
-        coachGaveResponsiveCues: false,
-        recordedMovementReviewedLive: false,
-        realTimeFormCorrection: false,
-      },
     });
     const scoring = makeScoring("coaching", { 4: null });
     const result = calculate("coaching", { facts, scoring });
@@ -92,18 +88,19 @@ describe("deterministic calculations", () => {
     const source = fixture("coaching-02.txt");
     const parsed = parseTranscript(source);
     const facts = makeFacts({
+      callType: "coaching",
       coachSpeaker: "Marcus Reid",
       clientSpeaker: "Hannah Vogel",
       movementCoachingPresent: false,
       diagnosticsApplicable: false,
-      movementSignals: {
-        clientPerformedLiveMovement: false,
-        coachGaveResponsiveCues: false,
-        recordedMovementReviewedLive: false,
-        realTimeFormCorrection: false,
-      },
-      dimensions: makeFacts().dimensions.map((dimension) => ({ ...dimension, positiveEvidence: [], evidenceSufficient: false })),
     });
+    facts.criteria.forEach((criterion) => {
+      criterion.state = "ABSENT";
+      criterion.evidenceLineNumbers = [];
+    });
+    facts.criteria.find((criterion) =>
+      criterion.criterionId === "coaching.d02.diagnostics_applicable"
+    )!.state = "NOT_APPLICABLE";
     const scoring = makeScoring("coaching", { 2: null, 4: null });
     scoring.dimensions.forEach((dimension) => {
       dimension.evidenceLineNumbers = [];
@@ -115,14 +112,14 @@ describe("deterministic calculations", () => {
     const result = validateAndCalculate({
       callType: "coaching",
       scoring,
-      evidence: verifyEvidenceLedger(facts, parsed),
+      evidence: verifyEvidenceLedger("coaching", facts, parsed),
       transcript: parsed,
     });
     expect(result.dimensions[3]?.disabled).toBe(true);
   });
 
   it("redistributes D2 proportionally to D3 and active D4", () => {
-    const facts = makeFacts({ diagnosticsApplicable: false });
+    const facts = makeFacts({ callType: "coaching", diagnosticsApplicable: false });
     const scoring = makeScoring("coaching", { 2: null });
     const result = calculate("coaching", { facts, scoring });
     expect(result.dimensions[1]).toMatchObject({ disabled: true, effectiveMaxScore: 0 });
@@ -132,7 +129,7 @@ describe("deterministic calculations", () => {
   });
 
   it("applies the documented D5 and D8 defaults", () => {
-    const facts = makeFacts({ adjustmentNeeded: false, strugglePresent: false, struggleHandled: null });
+    const facts = makeFacts({ callType: "coaching", adjustmentNeeded: false, strugglePresent: false });
     const scoring = makeScoring("coaching", { 5: 0, 8: 0 });
     const result = calculate("coaching", { facts, scoring });
     expect(result.dimensions[4]?.score).toBe(7);
@@ -140,7 +137,7 @@ describe("deterministic calculations", () => {
   });
 
   it("treats D10 booking as non-recoverable and selects it when it moves the score most", () => {
-    const facts = makeFacts({ nextCallBookedLive: false });
+    const facts = makeFacts({ callType: "coaching", nextCallBookedLive: false });
     const result = calculate("coaching", { facts });
     expect(result.dimensions[9]?.score).toBe(0);
     expect(result.oneThing).toMatchObject({ dimensionId: 10, resolvesCap: true, improvement: 5 });
