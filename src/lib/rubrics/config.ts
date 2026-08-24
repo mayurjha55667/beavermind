@@ -1,7 +1,7 @@
 import type { CallFacts, CallType, DimensionBand, Grade } from "@/schemas/evaluation";
 
-export const PROMPT_VERSION = "evaluation-v1.0.1";
-export const STAGE_SCHEMA_VERSION = "v1";
+export const PROMPT_VERSION = "evaluation-v1.0.3";
+export const STAGE_SCHEMA_VERSION = "v2";
 
 interface BandBucket {
   band: Exclude<DimensionBand, "N/A">;

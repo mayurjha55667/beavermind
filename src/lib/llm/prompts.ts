@@ -6,11 +6,11 @@ import type { CallType } from "@/schemas/evaluation";
 
 export const EVIDENCE_SYSTEM_PROMPT = `You are the evidence interpretation stage in a controlled call-quality pipeline.
 Extract only what the supplied transcript proves. Do not score the call. Do not calculate totals or grades.
-Every quotation must be copied character-for-character from one displayed transcript line or contiguous displayed transcript lines.
+Every quotation must be copied character-for-character from exactly one displayed transcript line.
 For a line displayed as "L7 [Client]: I want more energy.", prefer quote "I want more energy." with lineNumbers [7].
 Do not add quotation marks, ellipses, speaker labels, commentary, or corrected punctuation to quote.
-Never combine non-contiguous lines in one evidence reference; create separate references instead.
-Line numbers are one-based, unique, and must be returned in ascending contiguous order for multi-line evidence.
+Every evidence reference must contain exactly one line number. If evidence spans multiple lines, create one reference per line.
+Never combine multiple transcript lines in one evidence reference.
 Return coachSpeaker and clientSpeaker exactly as they appear inside the transcript's square brackets.
 Return all 12 dimensions exactly once. Record missing behaviour explicitly; never fill gaps from tone or plausibility.
 Movement coaching is present only if at least one supplied four-part detection signal is truly observable.`;
@@ -22,7 +22,7 @@ export function buildEvidencePrompt(input: {
   validationErrors?: unknown;
 }): string {
   const retry = input.validationErrors
-    ? `\nA prior extraction failed exact evidence validation. Correct every issue below without silently dropping valid evidence. For quote mismatches, recopy the exact text from the referenced line. For non-contiguous line numbers, split them into separate evidence references:\n${JSON.stringify(input.validationErrors)}\n`
+    ? `\nA prior extraction failed exact evidence validation. Correct every issue below without silently dropping valid evidence. When an error includes expectedQuote, copy that value verbatim into quote. Every replacement evidence reference must contain exactly one line number:\n${JSON.stringify(input.validationErrors)}\n`
     : "";
   return `CALL TYPE: ${input.callType}\n${retry}
 <COMPLETE_APPLICABLE_RUBRIC>

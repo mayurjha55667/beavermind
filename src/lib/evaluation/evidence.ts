@@ -14,6 +14,8 @@ export interface EvidenceValidationError {
   evidenceType: "positive" | "negative";
   evidenceIndex: number;
   message: string;
+  lineNumbers?: number[];
+  expectedQuote?: string;
 }
 
 export function verifyEvidenceLedger(
@@ -52,6 +54,8 @@ export function verifyEvidenceLedger(
         evidenceType: "positive",
         evidenceIndex,
         message: verified.message,
+        lineNumbers: verified.lineNumbers,
+        expectedQuote: verified.expectedQuote,
       });
       return [];
     }),
@@ -65,6 +69,8 @@ export function verifyEvidenceLedger(
         evidenceType: "negative",
         evidenceIndex,
         message: verified.message,
+        lineNumbers: verified.lineNumbers,
+        expectedQuote: verified.expectedQuote,
       });
       return [];
     }),
@@ -88,7 +94,12 @@ export function verifyEvidenceLedger(
 
 type ReferenceResult =
   | { ok: true; value: VerifiedEvidenceReference }
-  | { ok: false; message: string };
+  | {
+      ok: false;
+      message: string;
+      lineNumbers?: number[];
+      expectedQuote?: string;
+    };
 
 function verifyReference(
   reference: CallFacts["dimensions"][number]["positiveEvidence"][number],
@@ -97,16 +108,24 @@ function verifyReference(
   const lineNumbers = [...reference.lineNumbers];
   const unique = new Set(lineNumbers);
   if (unique.size !== lineNumbers.length) {
-    return { ok: false, message: "Evidence line numbers must be unique." };
+    return { ok: false, message: "Evidence line numbers must be unique.", lineNumbers };
   }
 
   if (lineNumbers.some((line, index) => index > 0 && line !== lineNumbers[index - 1]! + 1)) {
-    return { ok: false, message: "Multi-line evidence must reference contiguous ascending lines." };
+    return {
+      ok: false,
+      message: "Multi-line evidence must reference contiguous ascending lines.",
+      lineNumbers,
+    };
   }
 
   const transcriptLines = lineNumbers.map((lineNumber) => turns[lineNumber - 1]);
   if (transcriptLines.some((turn) => turn === undefined)) {
-    return { ok: false, message: "Evidence references a line that does not exist." };
+    return {
+      ok: false,
+      message: "Evidence references a line that does not exist.",
+      lineNumbers,
+    };
   }
 
   const verifiedLines = transcriptLines.filter((turn): turn is TranscriptTurn => turn !== undefined);
@@ -123,6 +142,8 @@ function verifyReference(
     return {
       ok: false,
       message: "Quote is not an exact substring of the referenced canonical transcript lines.",
+      lineNumbers,
+      expectedQuote: verifiedLines.map((turn) => turn.text).join("\n"),
     };
   }
 

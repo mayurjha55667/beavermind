@@ -1,6 +1,11 @@
 import { FatalError, RetryableError, getStepMetadata } from "workflow";
 import { SupabaseEvaluationRepository } from "@/lib/db/repository";
-import { publicMessageForCode, toAppError, type ErrorCode } from "@/lib/errors/app-error";
+import {
+  publicMessageForCode,
+  toAppError,
+  type AppError,
+  type ErrorCode,
+} from "@/lib/errors/app-error";
 import {
   runEvidenceStage,
   runScoringStage,
@@ -8,6 +13,7 @@ import {
   runValidationStage,
 } from "@/lib/evaluation/stages";
 import { getLLMProvider } from "@/lib/llm/provider";
+import type { StageName } from "@/schemas/evaluation";
 
 export async function evaluateCallWorkflow(evaluationId: string): Promise<{ evaluationId: string }> {
   "use workflow";
@@ -27,7 +33,7 @@ export async function evaluateCallWorkflow(evaluationId: string): Promise<{ eval
 
 async function extractEvidenceStep(evaluationId: string): Promise<void> {
   "use step";
-  await executeStage(() =>
+  await executeStage(evaluationId, "evidence", () =>
     runEvidenceStage(evaluationId, {
       repository: new SupabaseEvaluationRepository(),
       provider: getLLMProvider(),
@@ -37,7 +43,7 @@ async function extractEvidenceStep(evaluationId: string): Promise<void> {
 
 async function scoreRubricStep(evaluationId: string): Promise<void> {
   "use step";
-  await executeStage(() =>
+  await executeStage(evaluationId, "scoring", () =>
     runScoringStage(evaluationId, {
       repository: new SupabaseEvaluationRepository(),
       provider: getLLMProvider(),
@@ -47,12 +53,14 @@ async function scoreRubricStep(evaluationId: string): Promise<void> {
 
 async function validateCalculationStep(evaluationId: string): Promise<void> {
   "use step";
-  await executeStage(() => runValidationStage(evaluationId, new SupabaseEvaluationRepository()));
+  await executeStage(evaluationId, "validation", () =>
+    runValidationStage(evaluationId, new SupabaseEvaluationRepository()),
+  );
 }
 
 async function synthesizeReportStep(evaluationId: string): Promise<void> {
   "use step";
-  await executeStage(() =>
+  await executeStage(evaluationId, "synthesis", () =>
     runSynthesisStage(evaluationId, {
       repository: new SupabaseEvaluationRepository(),
       provider: getLLMProvider(),
@@ -81,19 +89,77 @@ async function ensureFailureRecordedStep(evaluationId: string, diagnostic: strin
   });
 }
 
-async function executeStage(operation: () => Promise<unknown>): Promise<void> {
+async function executeStage(
+  evaluationId: string,
+  stage: StageName,
+  operation: () => Promise<unknown>,
+): Promise<void> {
   try {
     await operation();
   } catch (error) {
     const appError = toAppError(error);
+    const diagnostic = safeWorkflowDiagnostic(appError);
+    const workflowMessage = `${appError.code}:${JSON.stringify(diagnostic)}`;
+    console.error(
+      JSON.stringify({
+        evaluationId,
+        stage,
+        code: appError.code,
+        diagnostic,
+      }),
+    );
     if (!appError.retryable) {
-      throw new FatalError(appError.code);
+      throw new FatalError(workflowMessage);
     }
     const { attempt } = getStepMetadata();
-    throw new RetryableError(appError.code, {
+    throw new RetryableError(workflowMessage, {
       retryAfter: Math.min(30_000, Math.max(1_000, 2 ** attempt * 1_000)),
     });
   }
+}
+
+function safeWorkflowDiagnostic(error: AppError): Record<string, unknown> {
+  const details = error.details;
+  if (Array.isArray(details)) {
+    return {
+      errorCount: details.length,
+      errors: details.slice(0, 24).flatMap((detail) => {
+        if (!detail || typeof detail !== "object") return [];
+        const issue = detail as Record<string, unknown>;
+        return [
+          {
+            dimensionId:
+              typeof issue.dimensionId === "number" ? issue.dimensionId : undefined,
+            evidenceType:
+              issue.evidenceType === "positive" || issue.evidenceType === "negative"
+                ? issue.evidenceType
+                : undefined,
+            evidenceIndex:
+              typeof issue.evidenceIndex === "number" ? issue.evidenceIndex : undefined,
+            message: typeof issue.message === "string" ? issue.message : "Validation failed.",
+            lineNumbers: Array.isArray(issue.lineNumbers)
+              ? issue.lineNumbers.filter((line): line is number => typeof line === "number")
+              : undefined,
+            hasExpectedQuote: typeof issue.expectedQuote === "string",
+          },
+        ];
+      }),
+    };
+  }
+
+  if (details && typeof details === "object") {
+    const source = details as Record<string, unknown>;
+    const safeDetails: Record<string, unknown> = {};
+    for (const key of ["message", "provider", "status", "code", "type", "hint"]) {
+      const value = source[key];
+      if (typeof value === "string" || typeof value === "number" || value === null) {
+        safeDetails[key] = value;
+      }
+    }
+    return safeDetails;
+  }
+
+  return {};
 }
 
 (extractEvidenceStep as typeof extractEvidenceStep & { maxRetries: number }).maxRetries = 2;

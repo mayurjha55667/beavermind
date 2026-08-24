@@ -33,7 +33,7 @@ export type Grade = z.infer<typeof GradeSchema>;
 
 export const EvidenceReferenceSchema = z
   .object({
-    lineNumbers: z.array(z.number().int().positive()).min(1),
+    lineNumbers: z.array(z.number().int().positive()).length(1),
     quote: z.string().min(1),
     interpretation: z.string().min(1),
   })
