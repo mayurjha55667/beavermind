@@ -206,10 +206,11 @@ export async function runSynthesisStage(
     }),
     idempotencyKey: `${evaluationId}:synthesis`,
   });
-  validateNarrativeEvidence(response.data, evidence.data);
-  validateNarrativeSafety(response.data);
+  const narrative = normalizeNarrative(response.data, result.data);
+  validateNarrativeEvidence(narrative, evidence.data);
+  validateNarrativeSafety(narrative);
   const envelope: StageEnvelope<ReportNarrative> = {
-    data: response.data,
+    data: narrative,
     metadata: providerMetadata(dependencies.provider, 1, response.durationMs, response.usage),
   };
   await dependencies.repository.saveStageResult({
@@ -219,7 +220,7 @@ export async function runSynthesisStage(
     result: envelope,
     validated: true,
   });
-  await dependencies.repository.markCompleted(evaluationId, response.data);
+  await dependencies.repository.markCompleted(evaluationId, narrative);
   return envelope;
 }
 
@@ -307,6 +308,26 @@ function validateNarrativeSafety(narrative: ReportNarrative): void {
       details: { message: "Client-facing narrative contains internal pipeline language." },
     });
   }
+}
+
+function normalizeNarrative(
+  narrative: ReportNarrative,
+  result: AuthoritativeEvaluation,
+): ReportNarrative {
+  if (result.oneThing.improvement > 0) return narrative;
+
+  const oneThing = result.oneThing;
+  return {
+    ...narrative,
+    oneThing: {
+      headline: `Maintain ${oneThing.dimensionName}`,
+      explanation: `${oneThing.dimensionName} is already at its full ${formatScore(oneThing.currentScore)}/${formatScore(oneThing.fullScore)}. Raising this dimension cannot increase the current final score of ${formatScore(oneThing.currentFinalTotal)}/100. Maintain the verified behaviours consistently in future calls.`,
+    },
+  };
+}
+
+function formatScore(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 function providerMetadata(

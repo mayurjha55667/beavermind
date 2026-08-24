@@ -114,6 +114,11 @@ describe("deterministic atomic criterion scoring", () => {
       score: 3,
       quickFix: "Next improvement: Explain the broader timeline and key milestones.",
     });
+    expect(result.dimensions[4]?.missingBehaviours).toHaveLength(8);
+    expect(result.dimensions[5]?.missingBehaviours).toHaveLength(7);
+    expect(result.dimensions[3]?.evidence.map((line) => line.lineNumber)).toEqual(
+      expect.arrayContaining([19, 20]),
+    );
     expect(result.dimensions[7]?.evidence.map((line) => line.lineNumber)).toEqual(
       expect.arrayContaining([52, 53]),
     );
@@ -122,6 +127,26 @@ describe("deterministic atomic criterion scoring", () => {
       quickFix: "Next improvement: Give a short, structured recap of what was covered.",
     });
     expect(JSON.stringify(result)).not.toMatch(/expectedQuote|prior extraction|validation error/i);
+  });
+
+  it("retains every verified criterion description and complete evidence bundle", () => {
+    const transcript = parseTranscript(SIMPLE_TRANSCRIPT);
+    const facts = makeFacts();
+    const dimensionFour = getCriterionCatalog("kickoff")
+      .filter((criterion) => criterion.dimensionId === 4);
+
+    dimensionFour.forEach((criterion, index) => {
+      setCriterionState(facts, criterion.id, "PRESENT", index + 1);
+    });
+
+    const evidence = verifyEvidenceLedger("kickoff", facts, transcript);
+    const scoring = scoreVerifiedCriteria("kickoff", evidence);
+    const dimension = scoring.dimensions[3]!;
+
+    expect(dimension.evidenceLineNumbers).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    for (const criterion of dimensionFour) {
+      expect(dimension.reasoning).toContain(criterion.description);
+    }
   });
 
   it("treats UNCLEAR as no credit and never requires a fabricated evidence line", () => {

@@ -18,7 +18,16 @@ const muted = "#61716D";
 const line = "#D9DDD5";
 
 const styles = StyleSheet.create({
-  page: { backgroundColor: cream, color: navy, fontFamily: "Helvetica", fontSize: 9, padding: 42, paddingBottom: 58 },
+  page: {
+    backgroundColor: cream,
+    color: navy,
+    fontFamily: "Helvetica",
+    fontSize: 9,
+    paddingTop: 85,
+    paddingRight: 42,
+    paddingBottom: 76,
+    paddingLeft: 42,
+  },
   cover: { backgroundColor: navy, color: cream, padding: 48 },
   brand: { fontSize: 10, letterSpacing: 2.2, textTransform: "uppercase", color: "#D8CBAF" },
   coverRule: { width: 42, height: 3, backgroundColor: coral, marginTop: 28, marginBottom: 72 },
@@ -28,7 +37,21 @@ const styles = StyleSheet.create({
   coverScore: { fontFamily: "Times-Roman", fontSize: 68, lineHeight: 0.9 },
   coverOutOf: { fontSize: 11, color: "#D8CBAF", marginLeft: 8, marginBottom: 8 },
   coverGrade: { fontSize: 13, letterSpacing: 1.8, textTransform: "uppercase", color: "#F0B19C", marginBottom: 8 },
-  header: { flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: line, paddingBottom: 10, marginBottom: 24, color: muted, fontSize: 7.5, letterSpacing: 1.1, textTransform: "uppercase" },
+  header: {
+    position: "absolute",
+    top: 42,
+    right: 42,
+    left: 42,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: line,
+    paddingBottom: 10,
+    color: muted,
+    fontSize: 7.5,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+  },
   sectionLabel: { color: coral, fontSize: 7.5, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 },
   heading: { fontFamily: "Times-Roman", fontSize: 24, marginBottom: 12 },
   body: { fontSize: 10, lineHeight: 1.55, color: "#304541" },
@@ -156,7 +179,7 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
 
       {evaluation.dimensions.map((dimension) => (
         <Page size="A4" style={styles.page} key={dimension.dimensionId}>
-          <PdfHeader evaluation={evaluation} label="Dimension scorecard" fixed={false} />
+          <PdfHeader evaluation={evaluation} label="Dimension scorecard" />
           {dimension.dimensionId === 1 ? (
             <>
               <Text style={styles.sectionLabel}>Full scorecard</Text>
@@ -222,14 +245,12 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
 function PdfHeader({
   evaluation,
   label,
-  fixed = true,
 }: {
   evaluation: CompletedEvaluation;
   label: string;
-  fixed?: boolean;
 }) {
   return (
-    <View style={styles.header} fixed={fixed}>
+    <View style={styles.header} fixed>
       <Text>Signal Review</Text>
       <Text>{label}</Text>
       <Text>{evaluation.id.slice(0, 8).toUpperCase()}</Text>

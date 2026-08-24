@@ -88,6 +88,13 @@ export function buildSynthesisPrompt(input: {
       negativeEvidence: dimension.negativeEvidence,
     })),
   };
+  const oneThingInstruction = input.result.oneThing.improvement === 0
+    ? `The oneThing headline and explanation must use maintenance language for dimension ${input.result.oneThing.dimensionId},
+${input.result.oneThing.dimensionName}. State that it is already at ${input.result.oneThing.currentScore}/${input.result.oneThing.fullScore}
+and cannot increase the current final score of ${input.result.oneThing.currentFinalTotal}. Never call 0 points a change or an improvement.`
+    : `The oneThing headline and explanation must describe dimension ${input.result.oneThing.dimensionId},
+${input.result.oneThing.dimensionName}, and the verified change from ${input.result.oneThing.currentFinalTotal}
+to ${input.result.oneThing.counterfactualFinalTotal}. Do not select a different dimension or alter those numbers.`;
   return `CALL TYPE: ${input.callType}
 
 <AUTHORITATIVE_DETERMINISTIC_RESULT>
@@ -98,7 +105,5 @@ ${JSON.stringify(input.result)}
 ${JSON.stringify(clientSafeEvidence)}
 </VERIFIED_CLIENT_SAFE_EVIDENCE>
 
-The oneThing headline and explanation must describe dimension ${input.result.oneThing.dimensionId},
-${input.result.oneThing.dimensionName}, and the verified change from ${input.result.oneThing.currentFinalTotal}
-to ${input.result.oneThing.counterfactualFinalTotal}. Do not select a different dimension or alter those numbers.`;
+${oneThingInstruction}`;
 }

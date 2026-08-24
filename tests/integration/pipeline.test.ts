@@ -29,6 +29,14 @@ describe("four-stage evaluation integration", () => {
     expect(repository.dimensions).toHaveLength(12);
     expect(repository.dimensions.every((dimension) => dimension.evidence.length > 0)).toBe(true);
     expect(repository.dimensions.every((dimension) => dimension.missingBehaviours.length === 0)).toBe(true);
+    expect(repository.evaluation.oneThing).toMatchObject({
+      improvement: 0,
+      headline: "Maintain Goal Alignment & Deep Why",
+    });
+    expect(repository.evaluation.oneThing?.explanation).toContain(
+      "cannot increase the current final score of 100/100",
+    );
+    expect(repository.evaluation.oneThing?.explanation).not.toMatch(/verified change|100 to 100/i);
     expect(provider.calls).toEqual(["call_facts", "report_narrative"]);
   });
 
