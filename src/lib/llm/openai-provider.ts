@@ -37,13 +37,11 @@ export class OpenAIProvider implements LLMProvider {
           instructions: input.system,
           input: input.prompt,
           store: false,
+          temperature: 0,
           text: {
             format: zodTextFormat(input.schema, input.schemaName),
           },
           prompt_cache_key: input.idempotencyKey,
-          reasoning: {
-            effort: "high",
-          },
         },
         {
           headers: {
