@@ -149,7 +149,7 @@ No model name or credential is hardcoded in production code.
 
 ### Supabase migration
 
-Link the Supabase CLI to the target project and apply the checked-in migration:
+Link the Supabase CLI to the target project and apply all checked-in migrations:
 
 ```bash
 npx supabase login
@@ -157,7 +157,7 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push
 ```
 
-The migration creates `evaluations`, `dimension_results`, and `evaluation_stage_results`, plus status/time indexes and the atomic attempt-counter function. RLS is enabled with no anon/authenticated policies. Public report reads are deliberately proxied through server routes using the dedicated service-role client; browser code never receives a Supabase key.
+The migrations create `evaluations`, `dimension_results`, and `evaluation_stage_results`, add the operator-declared diagnostics context, plus status/time indexes and the atomic attempt-counter function. RLS is enabled with no anon/authenticated policies. Public report reads are deliberately proxied through server routes using the dedicated service-role client; browser code never receives a Supabase key.
 
 ### Local development
 

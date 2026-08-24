@@ -10,9 +10,14 @@ Apply the strict-reviewer test to each requirement independently:
 Imagine a skeptical human reviewer sees only the requirement and the cited evidence bundle. Mark SUPPORTED only when
 those lines explicitly establish the complete requirement without material unstated context or charitable inference.
 Related topics, nearby keywords, general tone, and overall impressions are not evidence.
+All requirements within one criterion must describe the same behaviour or explicitly connected exchange. Do not combine
+independent moments from different sections merely because one mentions the action and another mentions the goal, outcome,
+or close. When the transcript does not explicitly connect those moments, mark the linking requirement NOT_SUPPORTED or
+UNVERIFIABLE.
 
 Requirement statuses:
-- SUPPORTED: the smallest complete cited evidence bundle establishes the full requirement. At least one line is required.
+- SUPPORTED: the smallest complete cited evidence bundle establishes the full requirement. At least one line is required,
+  except when the user-supplied call context explicitly marks a contextual criterion as authoritative.
 - NOT_SUPPORTED: the complete transcript does not establish the requirement and does not directly establish its opposite.
   Return no evidence lines.
 - CONTRADICTED: cited lines directly establish the opposite of the requirement. Direct evidence lines are required.
@@ -41,12 +46,27 @@ export function buildEvidencePrompt(input: {
   callType: CallType;
   criteria: readonly CriterionDefinition[];
   numberedTranscript: string;
+  diagnosticsApplicable?: boolean | null;
   validationErrors?: unknown;
 }): string {
   const retry = input.validationErrors
     ? `\n<INTERNAL_VALIDATION_ERRORS_DO_NOT_COPY>\n${JSON.stringify(input.validationErrors)}\n</INTERNAL_VALIDATION_ERRORS_DO_NOT_COPY>\n`
     : "";
+  const declaredCallContext = {
+    diagnosticsApplicable: input.callType === "coaching"
+      ? (input.diagnosticsApplicable ?? null)
+      : null,
+  };
   return `CALL TYPE: ${input.callType}\n${retry}
+<DECLARED_CALL_CONTEXT>
+${JSON.stringify(declaredCallContext)}
+</DECLARED_CALL_CONTEXT>
+
+When diagnosticsApplicable is true or false, it is authoritative user-supplied context. For
+coaching.d02.diagnostics_applicable only, return every requirement as SUPPORTED with no transcript lines when true, or
+NOT_APPLICABLE with no transcript lines when false. Do not infer or contradict this value from the transcript. A null value
+means legacy context was not supplied, so apply the ordinary transcript-based rules.
+
 <ATOMIC_REQUIREMENT_CATALOG>
 ${JSON.stringify(input.criteria.map((criterion) => ({
   criterionId: criterion.id,

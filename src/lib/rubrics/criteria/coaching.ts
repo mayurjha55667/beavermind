@@ -12,7 +12,18 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d01.listens_without_interrupting", 1, "The coach listens before responding and does not interrupt.", "Allow the client to finish before responding."),
   c("coaching.d01.reflects_client_state", 1, "The coach reflects the client's state back accurately.", "Reflect the client's state back in the coach's own words."),
   c("coaching.d01.tailored_call_intention", 1, "The coach states a call intention tailored to the client's current state.", "State a call intention tailored to what the client needs today."),
-  c("coaching.d01.adjusts_approach", 1, "The coach adjusts the call approach based on the check-in.", "Adjust the call plan based on the client's check-in."),
+  c("coaching.d01.adjusts_approach", 1, "The coach adjusts the call approach based on the opening check-in.", "Adjust the call plan based on the client's opening check-in.", false, 4, {
+    requirements: [
+      { id: "opening_state_identified", description: "The client's relevant state or need is established during the opening check-in." },
+      { id: "call_approach_changed", description: "The coach explicitly changes or prioritizes the call approach in response." },
+      { id: "causal_link_explicit", description: "The transcript explicitly links that change in approach to the opening check-in information." },
+    ],
+    excludedInterpretations: [
+      "A pre-planned agenda that already included possible adjustments.",
+      "A later exercise or lifestyle adjustment based on information first learned outside the opening check-in.",
+      "Proceeding with the original agenda without an explicit change in emphasis or approach.",
+    ],
+  }),
   c("coaching.d01.generic_check_in", 1, "A basic or generic check-in is present.", null),
   c("coaching.d01.generic_intention", 1, "A generic call intention is stated.", null),
 
@@ -56,7 +67,18 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d05.adjustment_needed", 5, "A training or lifestyle adjustment is needed on this call.", null),
   c("coaching.d05.adjustment_made", 5, "A relevant adjustment is made.", "Make a clear adjustment when one is needed."),
   c("coaching.d05.rationale_explained", 5, "The reason for the adjustment is explained.", "Explain why the adjustment is being made."),
-  c("coaching.d05.long_game_link", 5, "The adjustment is tied to the client's long-term goal.", "Tie the adjustment to the client's long-term goal."),
+  c("coaching.d05.long_game_link", 5, "The adjustment is explicitly tied to the client's long-term goal.", "Tie the adjustment explicitly to the client's long-term goal.", false, 5, {
+    requirements: [
+      { id: "specific_adjustment", description: "A specific training or lifestyle adjustment is identified." },
+      { id: "named_long_term_goal", description: "The client's specific long-term goal is identified." },
+      { id: "explicit_adjustment_goal_link", description: "The coach explicitly explains how that adjustment protects or advances the named long-term goal." },
+    ],
+    excludedInterpretations: [
+      "Mentioning an adjustment in one section and the long-term goal in another without connecting them.",
+      "A generic statement that the long-term goal remains the same.",
+      "Safety advice with no stated connection to the client's long-term goal.",
+    ],
+  }),
   c("coaching.d05.protective_strategy_framing", 5, "The adjustment is framed as intelligent protection rather than backing off.", "Frame the adjustment as a strategic way to protect progress."),
   c("coaching.d05.training_constraints_addressed", 5, "Relevant training constraints are addressed.", "Address the relevant training constraints."),
   c("coaching.d05.lifestyle_constraints_addressed", 5, "Relevant lifestyle constraints are addressed.", "Address the relevant lifestyle constraints."),
@@ -84,7 +106,17 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
     ],
   }),
   c("coaching.d06.client_deadline", 6, "The client commitment has a deadline.", "Attach a deadline to the client commitment."),
-  c("coaching.d06.weekly_theme_in_client_words", 6, "The client states the weekly theme in their own words.", "Ask the client to state the weekly theme in their own words."),
+  c("coaching.d06.weekly_theme_in_client_words", 6, "The client states a unifying weekly theme in their own words.", "Ask the client to state the unifying weekly theme in their own words.", false, 3, {
+    requirements: [
+      { id: "client_authored", description: "The client, rather than the coach, supplies the wording." },
+      { id: "unifying_theme", description: "The client's wording expresses the week's unifying focus, intention, or principle rather than merely listing tasks." },
+    ],
+    excludedInterpretations: [
+      "Repeating a list of commitments supplied by the coach.",
+      "Selecting the most important task without naming a broader weekly focus or intention.",
+      "Agreeing with a weekly theme stated only by the coach.",
+    ],
+  }),
   c("coaching.d06.micro_commitment_when_slipping", 6, "A micro-commitment is created when the client is slipping.", "Create a small immediate commitment when the client is slipping."),
   c("coaching.d06.clear_but_incomplete_commitments", 6, "Commitments are clear but one side, deadline, or measurement is incomplete.", null),
   c("coaching.d06.vague_actions", 6, "Only vague actions or encouragement are given.", null),
@@ -110,7 +142,17 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d08.fact_based_nondefensive", 8, "The coach stays grounded, fact-based, and non-defensive.", "Stay fact-based and avoid defending the program."),
   c("coaching.d08.reconnects_to_why", 8, "The coach reconnects the client to their why.", "Reconnect the struggle to the client's why."),
   c("coaching.d08.reframes_and_offers_options", 8, "The coach reframes the struggle and offers useful options.", "Reframe the struggle and offer clear options."),
-  c("coaching.d08.full_circle_close", 8, "The coach closes the struggle section by checking what else is needed.", "Close the loop by checking what the client needs from the coach."),
+  c("coaching.d08.full_circle_close", 8, "The coach closes the struggle thread by returning to it and checking what else the client needs.", "Close the struggle loop by returning to it and checking what the client needs from the coach.", false, 4, {
+    requirements: [
+      { id: "struggle_revisited", description: "The close explicitly returns to the struggle, concern, or resolution discussed in that thread." },
+      { id: "coach_support_checked", description: "The coach asks whether the client needs anything else from the coach regarding that struggle or resolution." },
+    ],
+    excludedInterpretations: [
+      "A generic end-of-call question such as whether anything else was missed.",
+      "A closing question that does not refer back to the struggle or its resolution.",
+      "Checking task clarity without checking what support the client needs.",
+    ],
+  }),
   c("coaching.d08.client_more_capable", 8, "The client leaves the struggle section more capable and reconnected.", "Confirm that the client leaves with greater confidence and capability.", false, 3, {
     requirements: [
       { id: "client_outcome_evidenced", description: "The client's own response explicitly demonstrates increased capability, clarity, or reconnection after the struggle discussion." },
@@ -123,7 +165,16 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d08.struggle_ignored", 8, "The struggle is ignored, minimized, avoided, or met defensively.", null),
 
   c("coaching.d09.specific_progress_celebrated", 9, "The coach celebrates a specific named progress from this call.", "Celebrate one specific piece of progress from this call."),
-  c("coaching.d09.direction_reiterated", 9, "The coach reiterates the direction or next milestone.", "Reiterate where this progress leads next."),
+  c("coaching.d09.direction_reiterated", 9, "The coach connects the celebrated progress to a future direction or next milestone.", "Reiterate where the celebrated progress leads next.", false, 4, {
+    requirements: [
+      { id: "future_direction_named", description: "A future direction, phase, or milestone is named." },
+      { id: "progress_connected_forward", description: "The coach explicitly connects the progress being celebrated to that future direction." },
+    ],
+    excludedInterpretations: [
+      "A tactical recap of next week's tasks with no future milestone.",
+      "A future goal mentioned earlier but not connected to the closing celebration.",
+    ],
+  }),
   c("coaching.d09.client_energized", 9, "The client leaves visibly energized rather than merely satisfied.", "Create a warmer, more energizing close."),
   c("coaching.d09.positive_generic_close", 9, "The close is positive but generic or mostly logistical.", null),
 
@@ -158,9 +209,32 @@ export const COACHING_CRITERIA: readonly CriterionDefinition[] = [
   c("coaching.d11.client_understands_next", 11, "The client clearly understands what happens after the call.", "Check that the client understands exactly what happens next."),
   c("coaching.d11.vague_follow_up", 11, "Follow-up is mentioned but timing or the accountability chain remains vague.", null),
 
-  c("coaching.d12.applicable_sections_covered", 12, "All applicable SOP sections are covered.", "Cover all applicable SOP sections."),
+  c("coaching.d12.applicable_sections_covered", 12, "All applicable SOP sections, including live next-call booking, are covered.", "Cover every applicable SOP section, including live next-call booking.", false, 8, {
+    requirements: [
+      { id: "check_in", description: "A check-in section is present." },
+      { id: "program_focus", description: "Program focus and vision are addressed." },
+      { id: "adjustments", description: "Adjustments and strategy are addressed when needed." },
+      { id: "accountability", description: "Action steps and accountability are addressed." },
+      { id: "close", description: "A closing section is present." },
+      { id: "live_booking", description: "The next call is actually booked live before the call ends." },
+    ],
+    excludedInterpretations: [
+      "Treating a verbal reference to a future call as completed live booking.",
+      "Calling all sections complete when the required booking section is absent.",
+    ],
+  }),
   c("coaching.d12.smooth_pacing", 12, "The call pacing is smooth rather than rushed or padded.", "Smooth out the pacing across sections."),
-  c("coaching.d12.close_and_booking_not_rushed", 12, "The close and booking do not feel rushed.", "Protect enough time for an unrushed close and booking."),
+  c("coaching.d12.close_and_booking_not_rushed", 12, "The close and completed live booking do not feel rushed.", "Protect enough time for an unrushed close and completed live booking.", false, 5, {
+    requirements: [
+      { id: "close_present", description: "A substantive closing exchange is present." },
+      { id: "live_booking_completed", description: "The next call is completed live during the call." },
+      { id: "close_and_booking_paced", description: "The transcript supports that both the close and booking were handled without being compressed or abrupt." },
+    ],
+    excludedInterpretations: [
+      "Inferring that booking was unrushed when no live booking occurred.",
+      "A verbal future-call reference without completed booking.",
+    ],
+  }),
   c("coaching.d12.client_not_confused", 12, "The client remains clear about where the call is going.", "Use clearer transitions so the client knows where the call is going."),
   c("coaching.d12.framework_natural", 12, "The framework is woven naturally rather than announced robotically.", "Use more natural transitions between framework sections."),
   c("coaching.d12.uneven_pacing", 12, "Most sections are covered, but pacing is uneven or one section is compressed.", null),
@@ -239,7 +313,15 @@ export function scoreCoachingD11(f: CriterionView): number {
 
 export function scoreCoachingD12(f: CriterionView): number {
   if (["applicable_sections_covered", "smooth_pacing", "close_and_booking_not_rushed", "client_not_confused", "framework_natural"].every((id) => f.present(`coaching.d12.${id}`))) return 5;
-  if (f.present("coaching.d12.uneven_pacing") || f.present("coaching.d12.applicable_sections_covered")) return 3;
+  if (
+    f.present("coaching.d12.uneven_pacing") ||
+    f.present("coaching.d12.applicable_sections_covered") ||
+    f.count([
+      "coaching.d12.smooth_pacing",
+      "coaching.d12.client_not_confused",
+      "coaching.d12.framework_natural",
+    ]) >= 2
+  ) return 3;
   return 0;
 }
 

@@ -142,9 +142,20 @@ export const ReportNarrativeSchema = z
   .strict();
 export type ReportNarrative = z.infer<typeof ReportNarrativeSchema>;
 
-export const CreateEvaluationSchema = z
-  .object({
-    callType: CallTypeSchema,
-    transcript: z.string(),
-  })
-  .strict();
+const TranscriptInputSchema = z.string();
+
+export const CreateEvaluationSchema = z.discriminatedUnion("callType", [
+  z
+    .object({
+      callType: z.literal("kickoff"),
+      transcript: TranscriptInputSchema,
+    })
+    .strict(),
+  z
+    .object({
+      callType: z.literal("coaching"),
+      transcript: TranscriptInputSchema,
+      diagnosticsApplicable: z.boolean(),
+    })
+    .strict(),
+]);

@@ -44,11 +44,11 @@ export function scoreVerifiedCriteria(
           disabled: true,
           disabledReason:
             definition.id === 2
-              ? "Diagnostics were not applicable on this non-milestone call."
+              ? diagnosticsDisabledReason(evidence)
               : "No live movement, responsive cues, live video review, or real-time form correction occurred.",
           reasoning:
             definition.id === 2
-              ? "The atomic criteria show that diagnostics were not applicable on this call."
+              ? diagnosticsDisabledReason(evidence)
               : "All four movement-coaching detection signals were absent, so this optional dimension is disabled.",
           evidenceLineNumbers: [],
           missingBehaviours: [],
@@ -98,6 +98,12 @@ export function scoreVerifiedCriteria(
     }),
     proposedCaps: [],
   };
+}
+
+function diagnosticsDisabledReason(evidence: VerifiedEvidenceLedger): string {
+  return evidence.diagnosticsApplicabilityDeclared
+    ? "Diagnostics were declared not applicable for this coaching call."
+    : "Diagnostics applicability was not supplied for this legacy evaluation, so the dimension was excluded conservatively.";
 }
 
 function formatScore(score: number): string {

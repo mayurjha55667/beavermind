@@ -95,6 +95,50 @@ describe("atomic criterion evidence verification", () => {
       .not.toThrow();
   });
 
+  it("uses declared diagnostics context instead of the model's transcript inference", () => {
+    const transcript = parseTranscript(SIMPLE_TRANSCRIPT);
+    const modelSaysApplicable = makeFacts({ callType: "coaching" });
+    const declaredNotApplicable = verifyEvidenceLedger(
+      "coaching",
+      modelSaysApplicable,
+      transcript,
+      { diagnosticsApplicable: false },
+    );
+    expect(declaredNotApplicable).toMatchObject({
+      diagnosticsApplicable: false,
+      diagnosticsApplicabilityDeclared: true,
+    });
+    expect(
+      declaredNotApplicable.criteria.find(
+        (criterion) => criterion.criterionId === "coaching.d02.diagnostics_applicable",
+      ),
+    ).toMatchObject({ state: "NOT_APPLICABLE", supportVerdict: "NOT_APPLICABLE" });
+
+    const modelSaysNotApplicable = makeFacts({
+      callType: "coaching",
+      diagnosticsApplicable: false,
+    });
+    const declaredApplicable = verifyEvidenceLedger(
+      "coaching",
+      modelSaysNotApplicable,
+      transcript,
+      { diagnosticsApplicable: true },
+    );
+    expect(declaredApplicable).toMatchObject({
+      diagnosticsApplicable: true,
+      diagnosticsApplicabilityDeclared: true,
+    });
+    expect(
+      declaredApplicable.criteria.find(
+        (criterion) => criterion.criterionId === "coaching.d02.diagnostics_applicable",
+      ),
+    ).toMatchObject({
+      state: "PRESENT",
+      supportVerdict: "FULLY_SUPPORTED",
+      evidenceLineNumbers: [],
+    });
+  });
+
   it("derives criterion support conservatively from requirement statuses", () => {
     expect(deriveCriterionSupport(["SUPPORTED", "SUPPORTED"], 0)).toEqual({
       supportVerdict: "FULLY_SUPPORTED",

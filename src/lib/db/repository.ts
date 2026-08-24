@@ -26,6 +26,7 @@ import type {
 interface EvaluationRow {
   id: string;
   call_type: CallType;
+  diagnostics_applicable: boolean | null;
   original_transcript: string;
   numbered_transcript: string;
   status: EvaluationStatus;
@@ -88,6 +89,7 @@ function mapEvaluation(row: EvaluationRow): EvaluationRecord {
   return {
     id: row.id,
     callType: row.call_type,
+    diagnosticsApplicable: row.diagnostics_applicable ?? null,
     originalTranscript: row.original_transcript,
     numberedTranscript: row.numbered_transcript,
     status: row.status,
@@ -152,6 +154,7 @@ export class SupabaseEvaluationRepository implements EvaluationRepository {
   async createEvaluation(input: {
     id: string;
     callType: CallType;
+    diagnosticsApplicable: boolean | null;
     originalTranscript: string;
     numberedTranscript: string;
     rubricVersion: string;
@@ -164,6 +167,7 @@ export class SupabaseEvaluationRepository implements EvaluationRepository {
       .insert({
         id: input.id,
         call_type: input.callType,
+        diagnostics_applicable: input.diagnosticsApplicable,
         original_transcript: input.originalTranscript,
         numbered_transcript: input.numberedTranscript,
         rubric_version: input.rubricVersion,

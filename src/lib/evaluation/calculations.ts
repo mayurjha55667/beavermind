@@ -79,7 +79,7 @@ export function validateAndCalculate(input: {
         weightedScore: 0,
         band: "N/A" as const,
         disabled: true,
-        disabledReason: disabledReason(definition.id),
+        disabledReason: disabledReason(definition.id, input.evidence),
         reasoning: proposed.reasoning,
         quickFix: proposed.quickFix,
         missingBehaviours: proposed.missingBehaviours,
@@ -283,9 +283,11 @@ function isDimensionDisabled(
   return false;
 }
 
-function disabledReason(dimensionId: number): string {
+function disabledReason(dimensionId: number, evidence: VerifiedEvidenceLedger): string {
   if (dimensionId === 2) {
-    return "Diagnostics were not applicable on this non-milestone call.";
+    return evidence.diagnosticsApplicabilityDeclared
+      ? "Diagnostics were declared not applicable for this coaching call."
+      : "Diagnostics applicability was not supplied for this legacy evaluation, so the dimension was excluded conservatively.";
   }
   return "No live movement, responsive cues, live video review, or real-time form correction occurred.";
 }

@@ -23,6 +23,10 @@ export interface EvidenceValidationError {
   lineNumbers?: number[];
 }
 
+export interface EvidenceContext {
+  diagnosticsApplicable?: boolean | null;
+}
+
 export function deriveCriterionSupport(
   statuses: readonly RequirementSupportStatus[],
   materialAssumptionCount: number,
@@ -127,10 +131,75 @@ function criterionConsistencyErrors(
   return consistencyErrors;
 }
 
+function reconcileCrossDimensionCriteria(
+  callType: CallType,
+  criteria: readonly VerifiedCriterionEvidence[],
+): VerifiedCriterionEvidence[] {
+  if (callType !== "coaching") return [...criteria];
+
+  const byId = new Map(criteria.map((criterion) => [criterion.criterionId, criterion]));
+  const nextCallBookedLive = [
+    "coaching.d10.booking_link_shared_live",
+    "coaching.d10.client_books_live",
+    "coaching.d10.specific_date_confirmed",
+    "coaching.d10.specific_time_confirmed",
+    "coaching.d10.before_close",
+  ].every((id) => byId.get(id)?.state === "PRESENT");
+
+  if (nextCallBookedLive) return [...criteria];
+
+  const forcedMissingRequirements = new Map<string, string>([
+    ["coaching.d12.applicable_sections_covered", "live_booking"],
+    ["coaching.d12.close_and_booking_not_rushed", "live_booking_completed"],
+  ]);
+
+  return criteria.map((criterion) => {
+    const requirementId = forcedMissingRequirements.get(criterion.criterionId);
+    if (!requirementId) return criterion;
+
+    const requirementResults = criterion.requirementResults.map((requirement) =>
+      requirement.requirementId === requirementId
+        ? {
+            ...requirement,
+            status: "NOT_SUPPORTED" as const,
+            evidenceLineNumbers: [],
+            transcriptLines: [],
+          }
+        : requirement,
+    );
+    const derived = deriveCriterionSupport(
+      requirementResults.map((requirement) => requirement.status),
+      criterion.materialAssumptions.length,
+    );
+    const supportedLineNumbers = derived.state === "PRESENT"
+      ? [...new Set(
+          requirementResults
+            .filter((requirement) => requirement.status === "SUPPORTED")
+            .flatMap((requirement) => requirement.evidenceLineNumbers),
+        )]
+      : [];
+
+    return {
+      ...criterion,
+      state: derived.state,
+      supportVerdict: derived.supportVerdict,
+      requirementResults,
+      evidenceLineNumbers: supportedLineNumbers,
+      transcriptLines: supportedLineNumbers.flatMap((lineNumber) => {
+        const turn = requirementResults
+          .flatMap((requirement) => requirement.transcriptLines)
+          .find((line) => line.lineNumber === lineNumber);
+        return turn ? [turn] : [];
+      }),
+    };
+  });
+}
+
 export function verifyEvidenceLedger(
   callType: CallType,
   facts: CallFacts,
   transcript: ParsedTranscript,
+  context: EvidenceContext = {},
 ): VerifiedEvidenceLedger {
   const speakers = new Set(transcript.turns.map((turn) => turn.speaker));
   if (!speakers.has(facts.coachSpeaker) || !speakers.has(facts.clientSpeaker)) {
@@ -162,12 +231,28 @@ export function verifyEvidenceLedger(
   }
 
   const errors: EvidenceValidationError[] = [];
-  const criteria: VerifiedCriterionEvidence[] = facts.criteria.flatMap((result) => {
+  const extractedCriteria: VerifiedCriterionEvidence[] = facts.criteria.flatMap((result) => {
     const definition = definitions.get(result.criterionId);
     if (!definition) return [];
 
+    const diagnosticsApplicabilityDeclared =
+      callType === "coaching" &&
+      result.criterionId === "coaching.d02.diagnostics_applicable" &&
+      typeof context.diagnosticsApplicable === "boolean";
+    const assessment = diagnosticsApplicabilityDeclared
+      ? {
+          ...result,
+          requirementResults: result.requirementResults.map((requirement) => ({
+            ...requirement,
+            status: context.diagnosticsApplicable ? "SUPPORTED" as const : "NOT_APPLICABLE" as const,
+            evidenceLineNumbers: [],
+          })),
+          materialAssumptions: [],
+        }
+      : result;
+
     const expectedRequirementIds = definition.requirements.map((requirement) => requirement.id);
-    const suppliedRequirementIds = result.requirementResults.map((requirement) => requirement.requirementId);
+    const suppliedRequirementIds = assessment.requirementResults.map((requirement) => requirement.requirementId);
     const suppliedRequirementSet = new Set(suppliedRequirementIds);
     const missingRequirements = expectedRequirementIds.filter((id) => !suppliedRequirementSet.has(id));
     const unknownRequirements = [...suppliedRequirementSet].filter(
@@ -188,7 +273,7 @@ export function verifyEvidenceLedger(
       return [];
     }
 
-    const statuses = result.requirementResults.map((requirement) => requirement.status);
+    const statuses = assessment.requirementResults.map((requirement) => requirement.status);
     const hasNotApplicable = statuses.includes("NOT_APPLICABLE");
     if (hasNotApplicable && !statuses.every((status) => status === "NOT_APPLICABLE")) {
       errors.push({
@@ -204,7 +289,7 @@ export function verifyEvidenceLedger(
       });
       return [];
     }
-    if (hasNotApplicable && result.materialAssumptions.length > 0) {
+    if (hasNotApplicable && assessment.materialAssumptions.length > 0) {
       errors.push({
         criterionId: result.criterionId,
         message: "NOT_APPLICABLE criteria cannot include material assumptions.",
@@ -213,7 +298,7 @@ export function verifyEvidenceLedger(
     }
 
     const knownRequirementIds = new Set(expectedRequirementIds);
-    const invalidAssumption = result.materialAssumptions.find(
+    const invalidAssumption = assessment.materialAssumptions.find(
       (assumption) => !knownRequirementIds.has(assumption.requirementId),
     );
     if (invalidAssumption) {
@@ -224,7 +309,7 @@ export function verifyEvidenceLedger(
       return [];
     }
 
-    const allLineNumbers = result.requirementResults.flatMap(
+    const allLineNumbers = assessment.requirementResults.flatMap(
       (requirement) => requirement.evidenceLineNumbers,
     );
     const uniqueLineNumbers = [...new Set(allLineNumbers)];
@@ -237,7 +322,7 @@ export function verifyEvidenceLedger(
       return [];
     }
 
-    for (const requirement of result.requirementResults) {
+    for (const requirement of assessment.requirementResults) {
       const lineNumbers = requirement.evidenceLineNumbers;
       if (new Set(lineNumbers).size !== lineNumbers.length) {
         errors.push({
@@ -248,7 +333,8 @@ export function verifyEvidenceLedger(
       }
       if (
         (requirement.status === "SUPPORTED" || requirement.status === "CONTRADICTED") &&
-        lineNumbers.length === 0
+        lineNumbers.length === 0 &&
+        !(diagnosticsApplicabilityDeclared && context.diagnosticsApplicable === true)
       ) {
         errors.push({
           criterionId: result.criterionId,
@@ -280,7 +366,7 @@ export function verifyEvidenceLedger(
 
     if (errors.some((error) => error.criterionId === result.criterionId)) return [];
 
-    const requirementResults = result.requirementResults.map((requirement) => ({
+    const requirementResults = assessment.requirementResults.map((requirement) => ({
       requirementId: requirement.requirementId,
       status: requirement.status,
       evidenceLineNumbers: [...requirement.evidenceLineNumbers],
@@ -288,7 +374,7 @@ export function verifyEvidenceLedger(
         (lineNumber) => transcript.turns[lineNumber - 1]!,
       ),
     }));
-    const derived = deriveCriterionSupport(statuses, result.materialAssumptions.length);
+    const derived = deriveCriterionSupport(statuses, assessment.materialAssumptions.length);
     const supportedLineNumbers = derived.state === "PRESENT"
       ? [...new Set(
           requirementResults
@@ -304,12 +390,13 @@ export function verifyEvidenceLedger(
       evidenceLineNumbers: supportedLineNumbers,
       transcriptLines: supportedLineNumbers.map((lineNumber) => transcript.turns[lineNumber - 1]!),
       requirementResults,
-      materialAssumptions: result.materialAssumptions.map((assumption) => ({ ...assumption })),
+      materialAssumptions: assessment.materialAssumptions.map((assumption) => ({ ...assumption })),
     }];
   });
 
   if (errors.length > 0) throw new AppError("EVIDENCE_VALIDATION_FAILED", { details: errors });
 
+  const criteria = reconcileCrossDimensionCriteria(callType, extractedCriteria);
   const criterionMap = new Map(criteria.map((criterion) => [criterion.criterionId, criterion]));
   const consistencyErrors = criterionConsistencyErrors(callType, criterionMap);
   if (consistencyErrors.length > 0) {
@@ -407,6 +494,7 @@ export function verifyEvidenceLedger(
       movementCoachingPresent,
       movementSignals,
       diagnosticsApplicable: false,
+      diagnosticsApplicabilityDeclared: false,
       adjustmentNeeded: false,
       noFollowUpQuestions: !present("kickoff.global.follow_up_question_present"),
       noActionStepsForEitherParty: !present("kickoff.d09.clear_next_steps"),
@@ -435,7 +523,10 @@ export function verifyEvidenceLedger(
     struggleHandled: strugglePresent ? !present("coaching.d08.struggle_ignored") && present("coaching.d08.struggle_acknowledged") : null,
     movementCoachingPresent,
     movementSignals,
-    diagnosticsApplicable: state("coaching.d02.diagnostics_applicable") !== "NOT_APPLICABLE",
+    diagnosticsApplicable: typeof context.diagnosticsApplicable === "boolean"
+      ? context.diagnosticsApplicable
+      : state("coaching.d02.diagnostics_applicable") !== "NOT_APPLICABLE",
+    diagnosticsApplicabilityDeclared: typeof context.diagnosticsApplicable === "boolean",
     adjustmentNeeded: state("coaching.d05.adjustment_needed") !== "ABSENT",
     noFollowUpQuestions: false,
     noActionStepsForEitherParty: !present("coaching.d06.coach_specific_commitment") && !present("coaching.d06.client_specific_commitment"),

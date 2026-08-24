@@ -1,8 +1,8 @@
 import type { VerifiedEvidenceLedger } from "@/lib/evaluation/types";
 import type { CallType, DimensionBand, Grade } from "@/schemas/evaluation";
 
-export const PROMPT_VERSION = "evaluation-v1.4.2-complete-traceability";
-export const STAGE_SCHEMA_VERSION = "v8";
+export const PROMPT_VERSION = "evaluation-v1.5.0-strict-semantic-boundaries";
+export const STAGE_SCHEMA_VERSION = "v9";
 
 export interface BandBucket {
   band: Exclude<DimensionBand, "N/A">;

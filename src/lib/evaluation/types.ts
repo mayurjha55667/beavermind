@@ -80,6 +80,7 @@ export interface VerifiedEvidenceLedger {
     realTimeFormCorrection: boolean;
   };
   diagnosticsApplicable: boolean;
+  diagnosticsApplicabilityDeclared: boolean;
   adjustmentNeeded: boolean;
   noFollowUpQuestions: boolean;
   noActionStepsForEitherParty: boolean;
@@ -170,6 +171,7 @@ export interface AuthoritativeEvaluation {
 export interface EvaluationRecord {
   id: string;
   callType: CallType;
+  diagnosticsApplicable: boolean | null;
   originalTranscript: string;
   numberedTranscript: string;
   status: EvaluationStatus;
@@ -233,6 +235,7 @@ export interface EvaluationRepository {
   createEvaluation(input: {
     id: string;
     callType: CallType;
+    diagnosticsApplicable: boolean | null;
     originalTranscript: string;
     numberedTranscript: string;
     rubricVersion: string;

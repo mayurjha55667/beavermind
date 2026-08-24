@@ -27,7 +27,7 @@ export async function POST(request: Request): Promise<Response> {
       {
         error: {
           code: "INVALID_INPUT",
-          message: "Choose a call type and provide a transcript in [Speaker]: text format.",
+          message: "Choose the call context and provide a transcript in [Speaker]: text format.",
           fields: parsedBody.error.flatten().fieldErrors,
         },
       },
@@ -45,6 +45,10 @@ export async function POST(request: Request): Promise<Response> {
     await repository.createEvaluation({
       id,
       callType: parsedBody.data.callType,
+      diagnosticsApplicable:
+        parsedBody.data.callType === "coaching"
+          ? parsedBody.data.diagnosticsApplicable
+          : null,
       originalTranscript: transcript.originalTranscript,
       numberedTranscript: transcript.numberedTranscript,
       rubricVersion: rubric.version,

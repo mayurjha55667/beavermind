@@ -9,6 +9,7 @@ const MAX_CHARACTERS = 100_000;
 export function SubmissionForm() {
   const router = useRouter();
   const [callType, setCallType] = useState<CallType>("kickoff");
+  const [diagnosticsApplicable, setDiagnosticsApplicable] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,11 @@ export function SubmissionForm() {
       const response = await fetch("/api/evaluations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ callType, transcript }),
+        body: JSON.stringify(
+          callType === "coaching"
+            ? { callType, transcript, diagnosticsApplicable }
+            : { callType, transcript },
+        ),
       });
       const payload = (await response.json()) as {
         id?: string;
@@ -68,6 +73,34 @@ export function SubmissionForm() {
           ))}
         </div>
       </fieldset>
+
+      {callType === "coaching" ? (
+        <fieldset className="space-y-3">
+          <legend className="field-label">Diagnostics context</legend>
+          <div className="segment" aria-label="Diagnostics context">
+            <button
+              type="button"
+              aria-pressed={!diagnosticsApplicable}
+              onClick={() => setDiagnosticsApplicable(false)}
+              className={!diagnosticsApplicable ? "segment-button active" : "segment-button"}
+            >
+              Regular coaching call
+            </button>
+            <button
+              type="button"
+              aria-pressed={diagnosticsApplicable}
+              onClick={() => setDiagnosticsApplicable(true)}
+              className={diagnosticsApplicable ? "segment-button active" : "segment-button"}
+            >
+              Milestone or video review
+            </button>
+          </div>
+          <p className="helper-text">
+            Select the second option only when diagnostics are expected this cycle, such as weeks
+            8, 16, or 24, or when a relevant movement video was submitted.
+          </p>
+        </fieldset>
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex items-end justify-between gap-4">

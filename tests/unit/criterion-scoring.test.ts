@@ -255,4 +255,29 @@ describe("deterministic atomic criterion scoring", () => {
     expect(scoring.dimensions[4]).toMatchObject({ disabled: false, score: 0 });
     expect(scoring.dimensions[7]).toMatchObject({ disabled: false, score: 0 });
   });
+
+  it("cannot award elite structure when the next call was not booked live", () => {
+    const transcript = parseTranscript(SIMPLE_TRANSCRIPT);
+    const facts = makeFacts({ callType: "coaching", nextCallBookedLive: false });
+    const evidence = verifyEvidenceLedger(
+      "coaching",
+      facts,
+      transcript,
+      { diagnosticsApplicable: false },
+    );
+    const scoring = scoreVerifiedCriteria("coaching", evidence);
+
+    expect(evidence.nextCallBookedLive).toBe(false);
+    expect(
+      evidence.criteria.find(
+        (criterion) => criterion.criterionId === "coaching.d12.applicable_sections_covered",
+      ),
+    ).toMatchObject({ state: "UNCLEAR", supportVerdict: "PARTIAL" });
+    expect(
+      evidence.criteria.find(
+        (criterion) => criterion.criterionId === "coaching.d12.close_and_booking_not_rushed",
+      ),
+    ).toMatchObject({ state: "UNCLEAR", supportVerdict: "PARTIAL" });
+    expect(scoring.dimensions[11]).toMatchObject({ score: 3, band: "MID" });
+  });
 });

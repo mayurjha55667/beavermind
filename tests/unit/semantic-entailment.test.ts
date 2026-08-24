@@ -57,6 +57,25 @@ describe("strict semantic entailment contracts", () => {
       .toEqual(["named_twelve_month_vision", "current_block_connected"]);
     expect(coaching.get("coaching.d10.client_books_live")?.excludedInterpretations.join(" "))
       .toMatch(/promises to book after the call/i);
+    expect(coaching.get("coaching.d01.adjusts_approach")?.requirements.map((item) => item.id))
+      .toEqual(["opening_state_identified", "call_approach_changed", "causal_link_explicit"]);
+    expect(coaching.get("coaching.d05.long_game_link")?.requirements.map((item) => item.id))
+      .toContain("explicit_adjustment_goal_link");
+    expect(coaching.get("coaching.d06.weekly_theme_in_client_words")?.excludedInterpretations.join(" "))
+      .toMatch(/list of commitments/i);
+    expect(coaching.get("coaching.d08.full_circle_close")?.excludedInterpretations.join(" "))
+      .toMatch(/generic end-of-call question/i);
+    expect(coaching.get("coaching.d09.direction_reiterated")?.excludedInterpretations.join(" "))
+      .toMatch(/tactical recap/i);
+    expect(coaching.get("coaching.d12.applicable_sections_covered")?.requirements.map((item) => item.id))
+      .toContain("live_booking");
+    expect(coaching.get("coaching.d12.close_and_booking_not_rushed")?.requirements.map((item) => item.id))
+      .toContain("live_booking_completed");
+  });
+
+  it("tells the extractor not to stitch unrelated moments into one supported criterion", () => {
+    expect(EVIDENCE_SYSTEM_PROMPT).toContain("Do not combine");
+    expect(EVIDENCE_SYSTEM_PROMPT).toContain("independent moments from different sections");
   });
 
   it("derives PARTIAL and removes positive credit when one required part is missing", () => {

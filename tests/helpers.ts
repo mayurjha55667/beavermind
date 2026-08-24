@@ -238,6 +238,7 @@ export class InMemoryRepository implements EvaluationRepository {
     this.evaluation = {
       id: randomUUID(),
       callType,
+      diagnosticsApplicable: callType === "coaching" ? false : null,
       originalTranscript: transcript,
       numberedTranscript: parseTranscript(transcript).numberedTranscript,
       status: "queued",

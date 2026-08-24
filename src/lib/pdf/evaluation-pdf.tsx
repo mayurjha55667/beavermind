@@ -206,6 +206,10 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
               <Text style={styles.subheading}>Why this score</Text>
               <Text style={styles.body}>{dimension.reasoning}</Text>
             </View>
+            <Text style={styles.quickFix} wrap={false} minPresenceAhead={55}>
+              QUICK FIX{"\n"}{dimension.quickFix}{"\n"}
+              Maximum lift if all dimension gaps are fixed: +{formatScore(dimension.improvementPotential)}
+            </Text>
             <View minPresenceAhead={90}>
               <Text style={styles.subheading}>Verified evidence</Text>
               {dimension.evidence.length === 0 ? (
@@ -230,10 +234,6 @@ export function EvaluationPdf({ evaluation }: { evaluation: CompletedEvaluation 
                 <Text style={styles.listItem} key={item}>• {item}</Text>
               ))}
             </View>
-            <Text style={styles.quickFix} wrap={false} minPresenceAhead={55}>
-              QUICK FIX{"\n"}{dimension.quickFix}{"\n"}
-              Maximum lift if all dimension gaps are fixed: +{formatScore(dimension.improvementPotential)}
-            </Text>
           </View>
           <PdfFooter evaluation={evaluation} />
         </Page>

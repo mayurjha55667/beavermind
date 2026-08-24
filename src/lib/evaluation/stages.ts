@@ -64,13 +64,16 @@ export async function runEvidenceStage(
           callType: evaluation.callType,
           criteria: getCriterionCatalog(evaluation.callType),
           numberedTranscript: transcript.numberedTranscript,
+          diagnosticsApplicable: evaluation.diagnosticsApplicable,
           validationErrors,
         }),
         idempotencyKey: `${evaluationId}:evidence:${attempt}`,
       });
       durationMs += response.durationMs;
       mergeUsage(usage, response.usage);
-      const verified = verifyEvidenceLedger(evaluation.callType, response.data, transcript);
+      const verified = verifyEvidenceLedger(evaluation.callType, response.data, transcript, {
+        diagnosticsApplicable: evaluation.diagnosticsApplicable,
+      });
       const envelope: StageEnvelope<VerifiedEvidenceLedger> = {
         data: verified,
         metadata: providerMetadata(dependencies.provider, attempt, durationMs, usage),
